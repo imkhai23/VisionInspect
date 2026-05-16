@@ -19,6 +19,7 @@ from app.routers import (
     stripe_router,
     usage_router,
     admin_router,
+    stream_router,
 )
 
 
@@ -31,9 +32,16 @@ settings = get_settings()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Run startup/shutdown tasks."""
-    # Table management is now handled via Supabase UI/Migrations
     print(f"[App] {settings.app_name} v{settings.app_version} started")
 
+    # Start Video Processor for real-time AI
+    try:
+        from app.services.video_service import get_video_processor
+        processor = get_video_processor()
+        processor.start()
+        print("[App] Video Processor started")
+    except Exception as e:
+        print(f"[App] Failed to start Video Processor: {e}")
 
     # Warm up the AI model
     try:
@@ -44,6 +52,14 @@ async def lifespan(app: FastAPI):
         print(f"[App] AI model warmup skipped: {e}")
 
     yield
+
+    # Shutdown
+    try:
+        from app.services.video_service import get_video_processor
+        get_video_processor().stop()
+        print("[App] Video Processor stopped")
+    except:
+        pass
 
     print("[App] Shutting down...")
 
@@ -58,6 +74,10 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+from fastapi.staticfiles import StaticFiles
+
+...
+
 # ── CORS ───────────────────────────────────────────────────────────────────────
 app.add_middleware(
     CORSMiddleware,
@@ -67,6 +87,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ── Static Files ──────────────────────────────────────────────────────────────
+os.makedirs("storage/defects", exist_ok=True)
+app.mount("/storage", StaticFiles(directory="storage"), name="storage")
+
 # ── Routers ────────────────────────────────────────────────────────────────────
 app.include_router(auth_router)
 app.include_router(predict_router)
@@ -74,6 +98,7 @@ app.include_router(history_router)
 app.include_router(usage_router)
 app.include_router(stripe_router)
 app.include_router(admin_router)
+app.include_router(stream_router)
 
 
 

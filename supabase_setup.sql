@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS public.predictions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
     image_filename TEXT NOT NULL,
+    image_url TEXT,
     image_size_bytes BIGINT,
     label TEXT NOT NULL,
     confidence FLOAT NOT NULL,

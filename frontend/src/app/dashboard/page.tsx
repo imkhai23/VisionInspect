@@ -24,8 +24,8 @@ export default function DashboardPage() {
 
       try {
         const [statsRes, usageRes] = await Promise.all([
-          fetch('http://localhost:8000/predict/stats', { headers: { 'Authorization': `Bearer ${token}` } }),
-          fetch('http://localhost:8000/usage/stats', { headers: { 'Authorization': `Bearer ${token}` } })
+          fetch('http://localhost:8000/usage/dashboard', { headers: { 'Authorization': `Bearer ${token}` } }),
+          fetch('http://localhost:8000/usage', { headers: { 'Authorization': `Bearer ${token}` } })
         ]);
 
         if (statsRes.ok) setStats(await statsRes.json());

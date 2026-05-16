@@ -50,14 +50,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, [router]);
 
   const NAV_ITEMS = [
-    { href: '/dashboard', icon: LayoutDashboard, label: t.dashboard },
-    { href: '/dashboard/inspect', icon: Search, label: t.inspectImage },
-    { href: '/dashboard/history', icon: History, label: t.history },
-    { href: '/dashboard/usage', icon: CreditCard, label: t.usagePlan },
+    { href: '/dashboard', icon: LayoutDashboard, label: lang === 'vi' ? 'Tổng quan' : 'Dashboard' },
+    { href: '/dashboard/inspect', icon: Search, label: lang === 'vi' ? 'Kiểm tra ảnh' : 'Inspect Image' },
+    { href: '/dashboard/history', icon: History, label: lang === 'vi' ? 'Lịch sử kiểm tra' : 'History' },
+    { href: '/dashboard/usage', icon: CreditCard, label: lang === 'vi' ? 'Gói dịch vụ' : 'Usage & Plan' },
   ];
 
   if (user?.is_admin) {
-    NAV_ITEMS.push({ href: '/dashboard/admin', icon: ShieldCheck, label: t.adminPanel });
+    NAV_ITEMS.push({ href: '/dashboard/admin', icon: ShieldCheck, label: lang === 'vi' ? 'Quản trị hệ thống' : 'Admin Panel' });
   }
 
   if (loading) {
@@ -153,7 +153,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-sm font-bold text-red-400 hover:bg-red-400/10 transition-all group"
           >
             <LogOut size={18} className="group-hover:-translate-x-1 transition-transform" />
-            {t.logout}
+            {lang === 'vi' ? 'Đăng xuất' : 'Logout'}
           </button>
         </div>
       </aside>

@@ -20,19 +20,28 @@ async def get_history(
     start = (page - 1) * page_size
     end = start + page_size - 1
 
-    # Fetch data and total count
+    user_id = current_user["id"]  # Keep original type from Supabase
+
     response = supabase.table("predictions") \
         .select("*", count="exact") \
-        .eq("user_id", current_user["id"]) \
-        .order("created_at", ascending=False) \
+        .eq("user_id", user_id) \
+        .order("created_at", desc=True) \
         .range(start, end) \
         .execute()
     
-    items = response.data
+    items = response.data or []
     total = response.count or 0
 
+    valid_items = []
+    for p in items:
+        try:
+            valid_items.append(PredictionResponse(**p))
+        except Exception as e:
+            print(f"[History] Skipping malformed record {p.get('id')}: {e}")
+            continue
+
     return PredictionListResponse(
-        items=[PredictionResponse.model_validate(p) for p in items],
+        items=valid_items,
         total=total,
         page=page,
         page_size=page_size,
@@ -45,21 +54,15 @@ async def update_prediction(
     current_user: CurrentUser,
     supabase: Client = Depends(get_supabase_client),
 ):
-    """Update a specific prediction's metadata (e.g. filename)."""
-    # Verify ownership
-    check_response = supabase.table("predictions").select("user_id").eq("id", str(prediction_id)).execute()
-    if not check_response.data:
+    check = supabase.table("predictions").select("user_id").eq("id", str(prediction_id)).execute()
+    if not check.data:
         raise HTTPException(status_code=404, detail="Prediction not found")
-    
-    if check_response.data[0]["user_id"] != current_user["id"]:
-        raise HTTPException(status_code=403, detail="Not authorized to update this prediction")
+    if check.data[0]["user_id"] != current_user["id"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
 
     update_data = payload.model_dump(exclude_unset=True)
-    if not update_data:
-        raise HTTPException(status_code=400, detail="No fields to update")
-
     response = supabase.table("predictions").update(update_data).eq("id", str(prediction_id)).execute()
-    return PredictionResponse.model_validate(response.data[0])
+    return PredictionResponse(**response.data[0])
 
 @router.delete("/{prediction_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_prediction(
@@ -67,16 +70,11 @@ async def delete_prediction(
     current_user: CurrentUser,
     supabase: Client = Depends(get_supabase_client),
 ):
-    """Delete a specific prediction from history."""
-    # Verify ownership
-    check_response = supabase.table("predictions").select("user_id").eq("id", str(prediction_id)).execute()
-    if not check_response.data:
+    check = supabase.table("predictions").select("user_id").eq("id", str(prediction_id)).execute()
+    if not check.data:
         raise HTTPException(status_code=404, detail="Prediction not found")
-    
-    if check_response.data[0]["user_id"] != current_user["id"]:
-        raise HTTPException(status_code=403, detail="Not authorized to delete this prediction")
+    if check.data[0]["user_id"] != current_user["id"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
 
     supabase.table("predictions").delete().eq("id", str(prediction_id)).execute()
     return None
-
-

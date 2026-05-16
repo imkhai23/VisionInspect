@@ -17,12 +17,15 @@ services:
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
       STRIPE_PRO_PRICE_ID: ${STRIPE_PRO_PRICE_ID:-}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
       ALLOWED_ORIGINS: '["http://localhost:3000"]'
       DEBUG: "false"
     ports:
       - "8000:8000"
     volumes:
       - ./ai/weights:/app/ai/weights
+      - ./storage:/app/storage
 
   # ── Next.js Frontend ─────────────────────────────────────────────────────────
   frontend:

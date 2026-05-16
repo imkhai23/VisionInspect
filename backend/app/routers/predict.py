@@ -96,6 +96,59 @@ async def predict(
             detail=f"Monthly limit of {limit} predictions reached. Upgrade to Pro for unlimited access.",
         )
 
+    # ── Upload image to Supabase Storage ─────────────────────────────────────
+    image_url = None
+    try:
+        # File path: user_id/timestamp_filename
+        timestamp = int(time.time())
+        file_path = f"{current_user['id']}/{timestamp}_{file.filename}"
+        
+        # Upload to 'predictions' bucket
+        supabase.storage.from_("predictions").upload(
+            path=file_path,
+            file=image_bytes,
+            file_options={"content-type": file.content_type}
+        )
+        
+        # Get public URL (normalize to string)
+        resp = supabase.storage.from_("predictions").get_public_url(file_path)
+        image_url = None
+        # resp can be a string or a dict depending on client version; try to extract a URL
+        try:
+            if isinstance(resp, str):
+                image_url = resp
+            elif isinstance(resp, dict):
+                # common keys used by various supabase client versions
+                for k in ("public_url", "publicUrl", "publicURL", "url", "data"):
+                    if k in resp and resp[k]:
+                        # if nested data contains the url
+                        if isinstance(resp[k], str):
+                            image_url = resp[k]
+                            break
+                        if isinstance(resp[k], dict):
+                            # try nested keys
+                            for nk in ("public_url", "publicUrl", "publicURL", "url"): 
+                                if nk in resp[k] and isinstance(resp[k][nk], str):
+                                    image_url = resp[k][nk]
+                                    break
+                            if image_url:
+                                break
+                # fallback to some known direct keys
+                if not image_url:
+                    for nk in ("publicUrl", "publicURL", "public_url", "url"):
+                        if nk in resp and isinstance(resp[nk], str):
+                            image_url = resp[nk]
+                            break
+            else:
+                image_url = str(resp)
+        except Exception:
+            image_url = None
+
+        print(f"[Storage] get_public_url response type={type(resp)}, image_url={image_url}")
+    except Exception as e:
+        print(f"Storage upload failed: {str(e)}")
+        # Continue even if upload fails, just without image_url
+
     # ── Run AI inference ─────────────────────────────────────────────────────
     try:
         from ai.inference import get_classifier
@@ -115,6 +168,7 @@ async def predict(
         "user_id": current_user["id"],
         "image_filename": file.filename or "unknown",
         "image_size_bytes": len(image_bytes),
+        "image_url": image_url,
         "label": result.label,
         "confidence": result.confidence,
         "all_scores": result.all_scores,

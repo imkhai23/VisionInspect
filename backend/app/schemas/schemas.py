@@ -1,11 +1,6 @@
-"""
-VisionInspect — Pydantic Schemas (request/response models)
-"""
-
 from datetime import datetime
 from uuid import UUID
-from typing import Optional
-
+from typing import Optional, Any
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
 
@@ -46,27 +41,25 @@ class UserResponse(BaseModel):
     created_at: datetime
     plan: str = "free"
 
-
     model_config = {"from_attributes": True}
 
 
 # ── Prediction Schemas ─────────────────────────────────────────────────────────
 class PredictionResponse(BaseModel):
-    id: UUID
-    label: str
-    confidence: float
-    all_scores: Optional[dict[str, float]]
-    image_filename: str
-    processing_ms: Optional[int]
-    created_at: datetime
+    id: Any
+    label: Optional[str] = "N/A"
+    confidence: Optional[float] = 0.0
+    all_scores: Optional[dict[str, Any]] = None
+    image_filename: Optional[str] = "unknown"
+    image_url: Optional[str] = None
+    processing_ms: Optional[int] = 0
+    created_at: Any
 
     model_config = {"from_attributes": True}
 
 
 class PredictionUpdate(BaseModel):
     image_filename: Optional[str] = Field(None, max_length=500)
-    # You could add a 'notes' field here if you add it to the DB table as well
-
 
 
 class PredictionListResponse(BaseModel):
