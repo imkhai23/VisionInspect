@@ -54,20 +54,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, [router]);
 
   const NAV_ITEMS = [
-    { href: '/dashboard', icon: LayoutDashboard, label: lang === 'vi' ? 'Tổng quan' : 'Dashboard' },
-    { href: '/dashboard/realtime', icon: Activity, label: lang === 'vi' ? 'Giám sát trực tiếp' : 'Real-time Monitor' },
-    { href: '/dashboard/inspect', icon: Search, label: lang === 'vi' ? 'Kiểm tra ảnh' : 'Inspect Image' },
-    { href: '/dashboard/history', icon: History, label: lang === 'vi' ? 'Lịch sử kiểm tra' : 'History' },
-    { href: '/dashboard/usage', icon: CreditCard, label: lang === 'vi' ? 'Gói dịch vụ' : 'Usage & Plan' },
+    { href: '/dashboard', icon: LayoutDashboard, label: t.dashboard },
+    { href: '/dashboard/realtime', icon: Activity, label: t.realtimeMonitor },
+    { href: '/dashboard/inspect', icon: Search, label: t.inspectImage },
+    { href: '/dashboard/history', icon: History, label: t.history },
+    { href: '/dashboard/usage', icon: CreditCard, label: t.usagePlan },
   ];
 
   if (user?.is_admin) {
     NAV_ITEMS.push(
-      { href: '/dashboard/admin', icon: ShieldCheck, label: lang === 'vi' ? 'Quản trị hệ thống' : 'Admin Panel' },
-      { href: '/dashboard/admin/datasets', icon: FolderKanban, label: lang === 'vi' ? 'Dataset Manager' : 'Dataset Manager' },
-      { href: '/dashboard/admin/training', icon: Activity, label: lang === 'vi' ? 'AI Training' : 'AI Training' },
-      { href: '/dashboard/admin/models', icon: Layers3, label: lang === 'vi' ? 'Model Registry' : 'Model Registry' },
-      { href: '/dashboard/admin/history', icon: Database, label: lang === 'vi' ? 'Training History' : 'Training History' },
+      { href: '/dashboard/admin', icon: ShieldCheck, label: t.adminPanel },
+      { href: '/dashboard/admin/datasets', icon: FolderKanban, label: t.datasetManager },
+      { href: '/dashboard/admin/training', icon: Activity, label: t.aiTraining },
+      { href: '/dashboard/admin/models', icon: Layers3, label: t.modelRegistry },
+      { href: '/dashboard/admin/history', icon: Database, label: t.trainingHistory },
     );
   }
 

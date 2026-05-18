@@ -186,9 +186,9 @@ export default function InspectPage() {
     try {
       const res = await predictApi.predict(file);
       setResult(res.data);
-      toast.success(lang === 'vi' ? '✅ Phân tích hoàn tất!' : '✅ Analysis complete!');
+      toast.success(t.analysisComplete);
     } catch {
-      toast.error(lang === 'vi' ? 'Lỗi khi phân tích. Vui lòng thử lại.' : 'Analysis failed. Please try again.');
+      toast.error(t.analysisFailed);
     } finally {
       setLoading(false);
     }
@@ -221,9 +221,9 @@ export default function InspectPage() {
         {/* Mode tabs */}
         <div className="flex items-center gap-1 p-1 bg-white/5 border border-white/10 rounded-2xl">
           {([
-            { key: 'upload', icon: <Upload size={16} />, label: lang === 'vi' ? 'Tải ảnh' : 'Upload' },
-            { key: 'camera', icon: <Camera size={16} />, label: lang === 'vi' ? 'Camera' : 'Camera' },
-            { key: 'stream', icon: <Activity size={16} />, label: lang === 'vi' ? 'Luồng Live' : 'Live Stream' },
+            { key: 'upload', icon: <Upload size={16} />, label: t.uploadMode },
+            { key: 'camera', icon: <Camera size={16} />, label: t.cameraMode },
+            { key: 'stream', icon: <Activity size={16} />, label: t.streamMode },
           ] as const).map(tab => (
             <button
               key={tab.key}
@@ -388,7 +388,7 @@ export default function InspectPage() {
                   style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}
                 >
                   <Camera size={22} />
-                  📸 {lang === 'vi' ? 'CHỤP ẢNH NGAY' : 'TAKE PHOTO NOW'}
+                  📸 {t.takePhotoNow}
                 </button>
               )}
             </div>
@@ -422,7 +422,7 @@ export default function InspectPage() {
 
                     <div className="absolute top-3 left-3 flex items-center gap-1.5 px-2 py-1 bg-indigo-500/80 rounded-full">
                       <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
-                      <span className="text-[10px] font-bold text-white uppercase">{lang === 'vi' ? 'Luồng từ AI' : 'AI Stream'}</span>
+                      <span className="text-[10px] font-bold text-white uppercase">{t.streamMode}</span>
                     </div>
                   </>
                 ) : (
@@ -431,10 +431,10 @@ export default function InspectPage() {
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                     <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between">
                       <span className="px-3 py-1 bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-xs font-bold rounded-full">
-                        ✅ {lang === 'vi' ? 'Đã lấy khung hình' : 'Frame Captured'}
+                        ✅ {t.frameCaptured}
                       </span>
                       <button onClick={handleReset} className="flex items-center gap-1.5 px-3 py-1.5 bg-black/60 backdrop-blur-md rounded-full text-white text-xs font-bold hover:bg-indigo-500 transition-all">
-                        <RefreshCw size={12} /> {lang === 'vi' ? 'Lấy lại' : 'Retake'}
+                        <RefreshCw size={12} /> {t.retakeBtn}
                       </button>
                     </div>
                   </>
@@ -448,7 +448,7 @@ export default function InspectPage() {
                   style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}
                 >
                   <Camera size={22} />
-                  📸 {lang === 'vi' ? 'CHỤP TỪ LUỒNG LIVE' : 'CAPTURE FROM STREAM'}
+                  📸 {t.captureFromStream}
                 </button>
               )}
             </div>
@@ -466,8 +466,8 @@ export default function InspectPage() {
               <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 to-purple-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               <span className="relative flex items-center justify-center gap-3 text-white">
                 {loading
-                  ? <><Loader2 size={20} className="animate-spin" /> {lang === 'vi' ? 'Đang phân tích...' : 'Analyzing...'}</>
-                  : <>🔍 {lang === 'vi' ? 'BẮT ĐẦU KIỂM TRA' : 'START INSPECTION'}</>
+                  ? <><Loader2 size={20} className="animate-spin" /> {t.analyzingBtn}</>
+                  : <>🔍 {t.startInspectionBtn}</>
                 }
               </span>
             </button>

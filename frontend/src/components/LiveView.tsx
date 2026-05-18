@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ZoomIn, ZoomOut, Maximize } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface TrackedObject {
   track_id: number;
@@ -21,6 +22,7 @@ interface Metadata {
 }
 
 export const LiveView: React.FC = () => {
+  const { t } = useLanguage();
   const videoRef = useRef<HTMLImageElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [stats, setStats] = useState({ total: 0, good: 0, defect: 0, fps: 0 });
@@ -118,25 +120,25 @@ export const LiveView: React.FC = () => {
       </div>
 
       {/* Zoom Controls Overlay */}
-      <div className="absolute top-4 left-4 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="absolute top-4 left-4 flex flex-col gap-2 z-10">
         <button 
           onClick={handleZoomIn}
-          className="p-2 bg-black/60 hover:bg-blue-600 text-white rounded-lg backdrop-blur-md border border-white/10 transition-colors"
-          title="Zoom In"
+          className="p-2 bg-black/60 hover:bg-blue-600 text-white rounded-lg backdrop-blur-md border border-white/10 transition-colors shadow-lg"
+          title={t.zoomInLabel}
         >
           <ZoomIn size={20} />
         </button>
         <button 
           onClick={handleZoomOut}
-          className="p-2 bg-black/60 hover:bg-blue-600 text-white rounded-lg backdrop-blur-md border border-white/10 transition-colors"
-          title="Zoom Out"
+          className="p-2 bg-black/60 hover:bg-blue-600 text-white rounded-lg backdrop-blur-md border border-white/10 transition-colors shadow-lg"
+          title={t.zoomOutLabel}
         >
           <ZoomOut size={20} />
         </button>
         <button 
           onClick={handleResetZoom}
-          className="p-2 bg-black/60 hover:bg-blue-600 text-white rounded-lg backdrop-blur-md border border-white/10 transition-colors"
-          title="Reset Zoom"
+          className="p-2 bg-black/60 hover:bg-blue-600 text-white rounded-lg backdrop-blur-md border border-white/10 transition-colors shadow-lg"
+          title={t.resetZoomLabel}
         >
           <Maximize size={20} />
         </button>
@@ -146,18 +148,18 @@ export const LiveView: React.FC = () => {
       <div className="absolute top-4 right-4 flex items-center space-x-2 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10">
         <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
         <span className="text-xs font-medium text-white uppercase tracking-wider">
-          {isConnected ? 'Live' : 'Offline'}
+          {isConnected ? t.liveStatus : t.offlineStatus}
         </span>
       </div>
 
       {/* Real-time Stats Overlay (Small) */}
       <div className="absolute bottom-4 left-4 bg-black/60 backdrop-blur-md p-3 rounded-lg border border-white/10 text-white">
         <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-          <span className="text-slate-400">Total:</span>
+          <span className="text-slate-400">{t.totalLabel}:</span>
           <span className="font-bold">{stats.total}</span>
-          <span className="text-slate-400">Good:</span>
+          <span className="text-slate-400">{t.goodLabel}:</span>
           <span className="text-green-400 font-bold">{stats.good}</span>
-          <span className="text-slate-400">Defect:</span>
+          <span className="text-slate-400">{t.defectLabel}:</span>
           <span className="text-red-400 font-bold">{stats.defect}</span>
         </div>
       </div>
@@ -165,7 +167,7 @@ export const LiveView: React.FC = () => {
       {/* Zoom Indicator */}
       {zoom > 1 && (
         <div className="absolute bottom-4 right-4 bg-blue-600/80 text-white px-2 py-1 rounded text-[10px] font-bold">
-          {zoom.toFixed(2)}x Zoom
+          {zoom.toFixed(2)}x {t.zoomLevelLabel}
         </div>
       )}
     </div>

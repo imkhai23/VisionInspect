@@ -28,7 +28,7 @@ type LiveMonitor = {
 };
 
 export default function TrainingPage() {
-  const { lang } = useLanguage();
+  const { t } = useLanguage();
   const [datasets, setDatasets] = useState<DatasetProject[]>([]);
   const [jobs, setJobs] = useState<TrainingJob[]>([]);
   const [models, setModels] = useState<ModelVersion[]>([]);
@@ -70,7 +70,7 @@ export default function TrainingPage() {
         setSelectedJobId(jobItems[0].id);
       }
     } catch (error) {
-      toast.error(lang === 'vi' ? 'Không tải được dữ liệu training' : 'Failed to load training data');
+      toast.error(t.loadTrainingDataError);
     } finally {
       setLoading(false);
     }
@@ -94,7 +94,7 @@ export default function TrainingPage() {
       setMonitor(payload);
       setJobs((current) => current.map((job) => (job.id === payload.training_job.id ? payload.training_job : job)));
     };
-    socket.onerror = () => toast.error(lang === 'vi' ? 'Kết nối monitor lỗi' : 'Monitoring socket error');
+    socket.onerror = () => toast.error(t.monitoringSocketError);
 
     return () => {
       socket.close();
@@ -103,17 +103,17 @@ export default function TrainingPage() {
 
   const startTraining = async () => {
     if (!form.dataset_id) {
-      toast.error(lang === 'vi' ? 'Chọn dataset' : 'Select a dataset');
+      toast.error(t.selectDataset);
       return;
     }
     try {
       const response = await trainingApi.createJob(form);
       const job = response.data as TrainingJob;
-      toast.success(lang === 'vi' ? 'Đã đưa job vào queue' : 'Training job queued');
+      toast.success(t.jobQueued);
       setSelectedJobId(job.id);
       refresh();
     } catch (error) {
-      toast.error(lang === 'vi' ? 'Không thể start training' : 'Unable to start training');
+      toast.error(t.unableStartTraining);
     }
   };
 
@@ -132,28 +132,26 @@ export default function TrainingPage() {
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <Link href="/dashboard/admin" className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-white mb-3">
-            <ArrowLeft size={16} /> {lang === 'vi' ? 'Quay lại Admin Hub' : 'Back to Admin Hub'}
+            <ArrowLeft size={16} /> {t.backToAdminHub}
           </Link>
-          <h1 className="text-4xl font-black text-white tracking-tight">{lang === 'vi' ? 'AI Training' : 'AI Training'}</h1>
+          <h1 className="text-4xl font-black text-white tracking-tight">{t.aiTrainingTitle}</h1>
           <p className="text-slate-500 mt-2 max-w-2xl">
-            {lang === 'vi'
-              ? 'Cấu hình YOLOv8, đẩy job vào Redis queue và theo dõi epoch/loss/mAP realtime.'
-              : 'Configure YOLOv8, queue jobs to Redis, and follow epoch/loss/mAP in realtime.'}
+            {t.aiTrainingSubtitle}
           </p>
         </div>
         <div className="flex flex-wrap gap-2 text-sm font-bold text-slate-400">
           <InfoChip icon={<Activity size={14} />} label="Jobs" value={jobs.length} />
           <InfoChip icon={<CheckCircle2 size={14} />} label="Models" value={models.length} />
-          <InfoChip icon={<Cpu size={14} />} label="Datasets" value={datasets.length} />
+          <InfoChip icon={<Cpu size={14} />} label={t.datasetsLabel} value={datasets.length} />
         </div>
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[420px_minmax(0,1fr)]">
         <div className="space-y-6">
           <div className="premium-card p-6 space-y-4">
-            <div className="flex items-center gap-2 text-slate-500 text-xs font-black uppercase tracking-[0.2em]"><Play size={14} /> {lang === 'vi' ? 'Start Training' : 'Start Training'}</div>
+            <div className="flex items-center gap-2 text-slate-500 text-xs font-black uppercase tracking-[0.2em]"><Play size={14} /> {t.startTrainingLabel}</div>
             <select value={form.dataset_id} onChange={(e) => setForm((current) => ({ ...current, dataset_id: e.target.value }))} className="w-full rounded-2xl bg-white/5 border border-white/10 px-4 py-3 text-white">
-              <option value="">{lang === 'vi' ? 'Chọn dataset' : 'Select dataset'}</option>
+              <option value="">{t.selectDataset}</option>
               {datasets.map((dataset) => <option key={dataset.id} value={dataset.id}>{dataset.name}</option>)}
             </select>
             <div className="grid grid-cols-2 gap-3">
@@ -177,17 +175,15 @@ export default function TrainingPage() {
               <input type="number" step="0.0001" className="rounded-2xl bg-white/5 border border-white/10 px-4 py-3 text-white" value={form.learning_rate} onChange={(e) => setForm((current) => ({ ...current, learning_rate: Number(e.target.value) }))} placeholder="Learning rate" />
             </div>
             <button onClick={startTraining} className="w-full rounded-2xl py-3 font-black text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 transition-all shadow-lg shadow-indigo-500/20">
-              {lang === 'vi' ? 'Start Training' : 'Start Training'}
+              {t.startTrainingLabel}
             </button>
             <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-400 leading-relaxed">
-              {lang === 'vi'
-                ? 'Job được gửi tới Redis queue và xử lý bởi worker riêng. Model version sẽ được tạo tự động sau khi training xong.'
-                : 'Jobs are queued into Redis and processed by a dedicated worker. A model version is created automatically when training completes.'}
+              {t.trainingJobNote}
             </div>
           </div>
 
           <div className="premium-card p-6 space-y-4">
-            <div className="flex items-center gap-2 text-slate-500 text-xs font-black uppercase tracking-[0.2em]"><SquareTerminal size={14} /> {lang === 'vi' ? 'Jobs gần đây' : 'Recent jobs'}</div>
+            <div className="flex items-center gap-2 text-slate-500 text-xs font-black uppercase tracking-[0.2em]"><SquareTerminal size={14} /> {t.recentJobs}</div>
             <div className="space-y-3 max-h-[380px] overflow-auto pr-1">
               {jobs.map((job) => {
                 const selected = job.id === selectedJobId;
@@ -209,17 +205,17 @@ export default function TrainingPage() {
 
         <div className="space-y-6">
           <div className="grid gap-4 md:grid-cols-4">
-            <StatCard title={lang === 'vi' ? 'Epoch' : 'Epoch'} value={selectedJob?.current_epoch || 0} subtitle={selectedJob ? `/${selectedJob.total_epochs || selectedJob.epochs}` : '—'} />
-            <StatCard title="mAP50" value={selectedJob?.map50 ? selectedJob.map50.toFixed(3) : '—'} subtitle={lang === 'vi' ? 'Độ chính xác detect' : 'Detection quality'} />
-            <StatCard title={lang === 'vi' ? 'Loss' : 'Loss'} value={selectedJob?.train_loss ? selectedJob.train_loss.toFixed(4) : '—'} subtitle={lang === 'vi' ? 'Train loss' : 'Training loss'} />
-            <StatCard title="ETA" value={selectedJob?.eta_seconds ? `${selectedJob.eta_seconds}s` : '—'} subtitle={lang === 'vi' ? 'Thời gian còn lại' : 'Remaining time'} />
+            <StatCard title="Epoch" value={selectedJob?.current_epoch || 0} subtitle={selectedJob ? `/${selectedJob.total_epochs || selectedJob.epochs}` : '—'} />
+            <StatCard title="mAP50" value={selectedJob?.map50 ? selectedJob.map50.toFixed(3) : '—'} subtitle={t.detectionQuality} />
+            <StatCard title="Loss" value={selectedJob?.train_loss ? selectedJob.train_loss.toFixed(4) : '—'} subtitle={t.trainingLoss} />
+            <StatCard title="ETA" value={selectedJob?.eta_seconds ? `${selectedJob.eta_seconds}s` : '—'} subtitle={t.remainingTime} />
           </div>
 
           <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
             <div className="premium-card p-6 space-y-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-xl font-black text-white">{lang === 'vi' ? 'Realtime monitor' : 'Realtime monitor'}</h2>
+                  <h2 className="text-xl font-black text-white">{t.realtimeMonitor}</h2>
                   <p className="text-sm text-slate-500">{selectedJob ? `${selectedJob.model_type} · ${selectedJob.status}` : '—'}</p>
                 </div>
                 <div className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${selectedJob?.status === 'running' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : 'bg-white/5 text-slate-400 border-white/10'}`}>
@@ -229,7 +225,7 @@ export default function TrainingPage() {
 
               <div>
                 <div className="flex items-center justify-between text-xs font-black uppercase tracking-widest text-slate-500 mb-2">
-                  <span>{lang === 'vi' ? 'Progress' : 'Progress'}</span>
+                  <span>{t.progress}</span>
                   <span>{selectedJob?.progress?.toFixed(1) || 0}%</span>
                 </div>
                 <div className="h-3 rounded-full bg-white/5 overflow-hidden">
@@ -238,8 +234,8 @@ export default function TrainingPage() {
               </div>
 
               <div className="grid gap-4 md:grid-cols-3">
-                <Metric icon={<Gauge size={16} />} label={lang === 'vi' ? 'Precision' : 'Precision'} value={selectedJob?.precision ? selectedJob.precision.toFixed(3) : '—'} />
-                <Metric icon={<Timer size={16} />} label={lang === 'vi' ? 'Recall' : 'Recall'} value={selectedJob?.recall ? selectedJob.recall.toFixed(3) : '—'} />
+                <Metric icon={<Gauge size={16} />} label={t.precision} value={selectedJob?.precision ? selectedJob.precision.toFixed(3) : '—'} />
+                <Metric icon={<Timer size={16} />} label={t.recall} value={selectedJob?.recall ? selectedJob.recall.toFixed(3) : '—'} />
                 <Metric icon={<MemoryStick size={16} />} label="GPU/RAM" value={`${selectedJob?.gpu_usage?.toFixed(1) || 0}/${selectedJob?.ram_usage?.toFixed(1) || 0}`} />
               </div>
 
@@ -256,7 +252,7 @@ export default function TrainingPage() {
             </div>
 
             <div className="premium-card p-6 space-y-4">
-              <div className="flex items-center gap-2 text-slate-500 text-xs font-black uppercase tracking-[0.2em]"><FileText size={14} /> {lang === 'vi' ? 'Training logs' : 'Training logs'}</div>
+              <div className="flex items-center gap-2 text-slate-500 text-xs font-black uppercase tracking-[0.2em]"><FileText size={14} /> {t.trainingLogs}</div>
               <div className="space-y-3 max-h-[520px] overflow-auto pr-1">
                 {(monitor?.recent_logs || []).map((log) => (
                   <div key={log.id} className="rounded-2xl border border-white/10 bg-white/5 p-4">
@@ -269,14 +265,12 @@ export default function TrainingPage() {
                 ))}
                 {!monitor?.recent_logs?.length && (
                   <div className="rounded-2xl border border-dashed border-white/10 bg-white/5 p-6 text-center text-slate-500">
-                    {lang === 'vi' ? 'Chọn một job đang chạy để xem log realtime.' : 'Select a running job to stream realtime logs.'}
+                    {t.selectRunningJob}
                   </div>
                 )}
               </div>
               <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-400">
-                {lang === 'vi'
-                  ? 'Worker sẽ publish trạng thái epoch vào Supabase. WebSocket này chỉ theo dõi, không cần refresh.'
-                  : 'Worker publishes epoch status to Supabase. This websocket monitors live updates without refresh.'}
+                {t.workerNote}
               </div>
             </div>
           </div>

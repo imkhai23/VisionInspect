@@ -75,7 +75,7 @@ export default function DashboardPage() {
             icon={<Search className="text-indigo-400" />} 
             value={stats?.total_predictions || 0} 
             label={t.totalInspections} 
-            trend="+12% từ tháng trước"
+            trend={`+12% ${t.fromLastMonth}`}
         />
         <StatCard 
             icon={<TrendingUp className="text-cyan-400" />} 
@@ -120,7 +120,7 @@ export default function DashboardPage() {
                             />
                         </div>
                         <p className="text-xs text-slate-400 text-right">
-                            Còn lại {usage.predictions_remaining} lượt trong tháng này
+                            {t.remainingLabel} {usage.predictions_remaining} {t.inThisMonth}
                         </p>
                     </div>
                 )}
@@ -129,10 +129,10 @@ export default function DashboardPage() {
             {!isPro && (
                 <div className="mt-8 p-4 bg-indigo-500/10 rounded-xl border border-indigo-500/20">
                     <p className="text-sm text-indigo-300 font-medium leading-relaxed">
-                        Nâng cấp lên Pro để không giới hạn lượt kiểm tra và sử dụng Model AI nâng cao.
+                        {t.upgradeProDesc}
                     </p>
                     <Link href="/dashboard/usage" className="mt-4 inline-flex items-center text-sm font-bold text-indigo-400 hover:text-indigo-300">
-                        Nâng cấp ngay →
+                        {t.upgradeNowLabel}
                     </Link>
                 </div>
             )}
