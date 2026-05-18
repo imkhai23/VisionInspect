@@ -5,11 +5,25 @@ Provides MJPEG and WebSocket endpoints for real-time monitoring.
 
 import asyncio
 import json
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Response
+from pydantic import BaseModel
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Response, HTTPException
 from fastapi.responses import StreamingResponse
 from app.services.video_service import get_video_processor
 
 router = APIRouter(prefix="/api/v1/stream", tags=["Streaming"])
+
+class StreamSettingsRequest(BaseModel):
+    source: str
+
+@router.post("/settings")
+async def update_stream_settings(payload: StreamSettingsRequest):
+    """Updates the camera source dynamically."""
+    processor = get_video_processor()
+    try:
+        processor.set_source(payload.source)
+        return {"ok": True, "source": payload.source}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/video_feed")

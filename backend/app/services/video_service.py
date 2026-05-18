@@ -60,7 +60,20 @@ class VideoProcessor:
             self.thread.join()
         if self.cap:
             self.cap.release()
+            self.cap = None
         print("[VideoProcessor] Stopped")
+
+    def set_source(self, new_source: str):
+        """Switch to a new camera source and restart the thread."""
+        was_running = self.is_running
+        if was_running:
+            self.stop()
+        
+        self.source = new_source
+        print(f"[VideoProcessor] Source changed to {self.source}")
+        
+        if was_running:
+            self.start()
 
     def _save_defect_data(self, frame, obj_id, conf, tracked_objs):
         """Save snapshot and trigger recording for a defect."""

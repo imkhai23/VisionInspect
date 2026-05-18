@@ -31,20 +31,42 @@ export default function RealtimeDashboard() {
     return () => clearInterval(timer);
   }, []);
 
-  const handleSaveSettings = () => {
+  const handleSaveSettings = async () => {
     if (sourceType === 'wifi' && !ipAddress) {
       toast.error('Vui lòng nhập địa chỉ IP/RTSP');
       return;
     }
     
-    let sourceLabel = '';
-    if (sourceType === 'usb') sourceLabel = 'USB: Webcam 0';
-    else if (sourceType === 'wifi') sourceLabel = `WiFi: ${ipAddress}`;
-    else sourceLabel = 'Bluetooth Camera';
+    let finalSource = '0';
+    let sourceLabel = 'USB: Webcam 0';
 
-    setCameraSource(sourceLabel);
-    setShowSettings(false);
-    toast.success('Đã cập nhật nguồn Camera. Vui lòng khởi động lại Backend để áp dụng.');
+    if (sourceType === 'wifi') {
+      finalSource = ipAddress;
+      sourceLabel = `WiFi: ${ipAddress}`;
+    } else if (sourceType === 'bluetooth') {
+      // Bluetooth usually requires a driver that exposes it as a camera index (e.g., 1, 2)
+      // or an RTSP stream via a mobile app bridge.
+      finalSource = '1'; 
+      sourceLabel = 'Bluetooth Camera';
+    }
+
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/stream/settings`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ source: finalSource }),
+      });
+
+      if (response.ok) {
+        setCameraSource(sourceLabel);
+        setShowSettings(false);
+        toast.success('Đã kết nối nguồn Camera mới!');
+      } else {
+        toast.error('Không thể kết nối với nguồn Camera này.');
+      }
+    } catch (error) {
+      toast.error('Lỗi kết nối Server.');
+    }
   };
 
   return (
