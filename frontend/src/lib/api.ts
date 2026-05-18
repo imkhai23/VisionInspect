@@ -64,6 +64,12 @@ export const predictApi = {
 
   history: (page = 1, pageSize = 20) =>
     api.get('/history', { params: { page, page_size: pageSize } }),
+
+  updateHistory: (predictionId: string, data: { image_filename?: string }) =>
+    api.patch(`/history/${predictionId}`, data),
+
+  deleteHistory: (predictionId: string) =>
+    api.delete(`/history/${predictionId}`),
 };
 
 // ── Usage ─────────────────────────────────────────────────────────────────────

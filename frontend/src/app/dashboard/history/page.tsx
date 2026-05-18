@@ -39,6 +39,22 @@ export default function HistoryPage() {
     }
   };
 
+  const handleDelete = async (predictionId: string) => {
+    const msg = lang === 'vi'
+      ? 'Xóa bản ghi kiểm tra này?'
+      : 'Delete this inspection record?';
+    if (!window.confirm(msg)) return;
+
+    try {
+      await predictApi.deleteHistory(predictionId);
+      setPredictions((prev) => prev.filter((p) => p.id !== predictionId));
+      if (selected?.id === predictionId) setSelected(null);
+      toast.success(lang === 'vi' ? 'Đã xóa bản ghi.' : 'Record deleted.');
+    } catch {
+      toast.error(lang === 'vi' ? 'Xóa thất bại.' : 'Delete failed.');
+    }
+  };
+
   useEffect(() => { fetchHistory(); }, []);
 
   // Close modal on ESC key
@@ -133,7 +149,12 @@ export default function HistoryPage() {
                       <Eye size={13} />
                       {lang === 'vi' ? 'Chi tiết & Phóng to' : 'Details & Zoom'}
                     </button>
-                    <button className="p-2 text-slate-600 hover:text-red-400 transition-colors rounded-lg hover:bg-red-500/10">
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(p.id)}
+                      className="p-2 text-slate-600 hover:text-red-400 transition-colors rounded-lg hover:bg-red-500/10"
+                      title={lang === 'vi' ? 'Xóa' : 'Delete'}
+                    >
                       <Trash2 size={14} />
                     </button>
                   </div>

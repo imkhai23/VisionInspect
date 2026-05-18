@@ -85,6 +85,7 @@ const translations = {
     viewAll: 'Xem tất cả',
     upgradeNow: 'Nâng cấp ngay',
     using: 'Đang sử dụng',
+    allAssets: "Tất cả tệp tin",
   },
   en: {
     // AI Labels
@@ -166,6 +167,7 @@ const translations = {
     viewAll: 'View All',
     upgradeNow: 'Upgrade Now',
     using: 'In Use',
+    allAssets: "All Assets",
   }
 };
 

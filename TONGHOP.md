@@ -1,66 +1,79 @@
-# TONG HOP DANH GIA DU AN VisionInspect
+# TỔNG HỢP ĐÁNH GIÁ DỰ ÁN VisionInspect
 
-Ngay cap nhat: 2026-05-16
+**Ngày cập nhật:** 18/05/2026  
+**Đối chiếu:** QUY-CHE-THI-CUOI-KY (môn Các công nghệ mới trong phát triển phần mềm)  
+**Repository:** https://github.com/imkhai23/VisionInspect  
 
-Tai lieu nay tong hop hien trang source code trong workspace va doi chieu voi yeu cau bat buoc cua mon hoc.
+Tài liệu này tổng hợp hiện trạng source code và gợi ý hành động trước khi nộp bài (29/05/2026).
 
-## 1) Bang doi chieu tieu chi
+---
 
-| Tieu chi | Trang thai | Minh chung trong code | Luu y / Goi y sua doi |
+## 1) Bảng đối chiếu tiêu chí
+
+| Tiêu chí | Trạng thái | Minh chứng trong code | Lưu ý / Gợi ý sửa đổi |
 |---|---|---|---|
-| Frontend dung Next.js App Router (khong dung Pages Router) | Dat | Co cau truc `frontend/src/app` va cac file `layout.tsx`, `page.tsx`; khong co `frontend/src/pages` | Giu nguyen App Router |
-| Frontend dung TypeScript, co type ro rang | Dat | `frontend/tsconfig.json` (strict true), `frontend/src/types/index.ts` co interfaces | Co the tat `allowJs` de chat che hon |
-| Frontend dung Tailwind CSS hoac shadcn/ui | Chua Dat | Khong co `tailwind.config.*`, khong co `components.json`; dang dung custom CSS tai `frontend/src/app/globals.css` | Can bo sung Tailwind hoac shadcn/ui de dung de bai |
-| Backend dung Supabase Auth | Chua Dat | Dang dung JWT tu quan trong `backend/app/middleware/auth.py` va router auth trong `backend/app/routers/auth.py` | Chuyen sang Supabase Auth SDK/API |
-| Backend dung Supabase Database | Chua Dat | Dang dung SQLAlchemy + asyncpg PostgreSQL thuong trong `backend/app/database.py` | Ket noi va van hanh tren Supabase Postgres |
-| Co it nhat 1 tinh nang bo sung Supabase (Storage hoac Realtime) | Thieu | Khong tim thay code Supabase Storage/Realtime trong backend/frontend | Them upload anh bang Supabase Storage hoac su dung Realtime |
-| Co cau hinh RLS (Row Level Security) | Thieu | Khong co migration/policy RLS; thu muc `backend/alembic/versions` chua co file migration | Them SQL migration bat RLS va tao policy theo user |
-| CRUD day du (Create/Read/Update/Delete) | Chua Dat | Hien co chu yeu POST/GET; chua co PUT/PATCH/DELETE cho tai nguyen nghiep vu | Bo sung endpoint update/delete (vi du history/prediction notes/profile) |
-| Containerization co Dockerfile + docker-compose dung chuan | Chua Dat | Co `docker-compose.yml`, `frontend/Dockerfile` multi-stage tot; `backend/Dockerfile` copy path chua khop context compose | Sua lai backend Dockerfile hoac doi build context |
-| Git san sang push GitHub | Chua Dat | Co `.gitignore` kha day du, nhung workspace hien tai chua duoc `git init` | Khoi tao git repo, commit, gan remote roi push |
+| Frontend Next.js App Router | **Đạt** | `frontend/src/app/**` (`layout.tsx`, `page.tsx`); không có `pages/` | Thêm 1–2 Server Component / Server Action để khớp đề cương |
+| Frontend TypeScript | **Đạt** | `tsconfig.json` strict; `src/types/index.ts` | Giảm `any` ở API response |
+| Tailwind CSS hoặc shadcn/ui | **Đạt (Tailwind)** | `tailwind.config.js`, `globals.css` (`@import "tailwindcss"`) | shadcn/ui: chưa có — không bắt buộc nếu đã dùng Tailwind |
+| Backend Supabase Auth | **Đạt (qua FastAPI)** | `backend/app/services/supabase_auth.py`, `routers/auth.py` | Frontend chưa gọi SDK trực tiếp — đã scaffold `@supabase/ssr` |
+| Backend Supabase Database | **Đạt** | `supabase_client.py`, routers dùng `supabase.table(...)` | `database.py` (SQLAlchemy) còn nhưng **không dùng** trong router — có thể gỡ hoặc ghi chú legacy |
+| Supabase Storage hoặc Realtime | **Storage: Đạt** | `predict.py` bucket `predictions`; `storage_service.py` | **Realtime Supabase: chưa** — realtime dùng WebSocket FastAPI |
+| RLS trên database | **Có trên SQL** | `supabase_setup.sql` policies | Runtime backend dùng **service_role** → bypass RLS — cần giải thích khi bảo vệ |
+| CRUD đầy đủ | **Đạt (API)** | `history.py` PATCH/DELETE; `training_admin.py` CRUD datasets/models | UI trang History chưa có nút xóa — nên bổ sung |
+| Docker + Compose | **Đạt** | `docker-compose.yml`, `frontend/Dockerfile` multi-stage, `backend/Dockerfile` | Chạy thử `docker compose up --build` trước nộp; video processor tắt mặc định trong compose |
+| GitHub + commit history | **Đạt** | Remote GitHub, ~12+ commits | Chuẩn hóa Conventional Commits; tag `v1.0-submission` |
+| Deploy VPS + domain + SSL | **Chưa có bằng chứng** | README hướng Vercel/Render | **Ưu tiên P0:** deploy VPS + HTTPS + link demo LMS |
+| Minh chứng AI tool | **Đã có file mẫu** | `APPENDIX_AI_PROMPTS.md` | Nộp LMS; tùy chỉnh prompts theo quá trình thật của bạn |
 
-## 2) Diem thieu sot / sai so voi yeu cau
+---
 
-1. Chua trien khai Supabase Auth (dang tu quan JWT).
-2. Chua trien khai Supabase Storage/Realtime.
-3. Chua co RLS policy tren database.
-4. CRUD chua day du vong doi du lieu (thieu update/delete endpoint ro rang).
-5. Backend Dockerfile co nguy co build fail do duong dan COPY khong khop voi compose context.
-6. Chua khoi tao git repository tai thu muc du an.
-7. Middleware auth dang co logic fallback/test mode tao demo user trong local, khong phu hop production/cham tieu chi bao mat.
+## 2) Điểm mạnh so với yêu cầu tối thiểu
 
-## 3) Action items uu tien (de dat diem cao)
+1. **AI phong phú:** ResNet (upload), YOLOv8 (realtime + training worker).
+2. **Realtime:** MJPEG (`/api/v1/stream/video_feed`) + WebSocket metadata + `LiveView.tsx`.
+3. **Training platform:** Dataset manager, training jobs, model registry, Redis queue.
+4. **Tích hợp phụ:** Stripe, Telegram alerts, đa ngôn ngữ VI/EN.
+5. **Schema DB đầy đủ** kèm trigger `handle_new_user` và RLS cơ bản.
 
-### Uu tien 1 - Dat dung yeu cau Supabase
-1. Tao Supabase project va cap nhat bien moi truong.
-2. Chuyen dang ky/dang nhap sang Supabase Auth.
-3. Chuyen DB sang Supabase Postgres (hoac ket noi truc tiep project Supabase).
-4. Viet migration SQL bat RLS cho cac bang (`users`, `predictions`, `subscriptions`, `usage_logs`).
-5. Tao policy RLS theo user (`auth.uid()` gan voi `user_id`).
+---
 
-### Uu tien 2 - Hoan thien chuc nang
-1. Them endpoint CRUD con thieu:
-   - PUT/PATCH cho resource can sua (vi du note/metadata prediction).
-   - DELETE cho history/prediction theo id.
-2. Bo sung test API cho cac endpoint moi.
+## 3) Điểm thiếu sót / rủi ro khi chấm điểm
 
-### Uu tien 3 - Chuan hoa frontend theo de
-1. Cai Tailwind CSS hoac shadcn/ui.
-2. Refactor cac style inline sang class utility/components.
+1. **FastAPI là custom backend dày** — quy chế ghi “Backend: Supabase”, không thay bằng custom backend → cần narrative “Supabase = data/auth; FastAPI = AI/streaming”.
+2. **RLS không enforce** khi API dùng `SUPABASE_SERVICE_ROLE_KEY`.
+3. **Chưa deploy VPS + SSL** (ảnh hưởng demo 30% và báo cáo mục 8).
+4. **Không dùng Supabase Realtime** (chỉ WebSocket tự host).
+5. **Hai pipeline AI** (ResNet vs YOLO) — dễ bị hỏi vấn đáp nếu không giải thích rõ.
+6. **Commit history ngắn**, chưa đồng đều Conventional Commits.
 
-### Uu tien 4 - Chuan hoa deploy va nop bai
-1. Sua `backend/Dockerfile` de khop build context trong `docker-compose.yml`.
-2. Chay thu lai:
-   - `docker compose up --build`
-3. Khoi tao git:
-   - `git init`
-   - `git add .`
-   - `git commit -m "initial submission"`
-   - `git remote add origin <repo-url>`
-   - `git push -u origin main`
+---
 
-## 4) Ket luan ngan
+## 4) Action items ưu tiên (trước 29/05/2026)
 
-- Phan frontend (Next App Router + TypeScript) dang on.
-- Phan bat buoc Supabase/RLS la khoang trong lon nhat can bo sung.
-- Neu hoan tat Supabase Auth + DB + RLS + 1 tinh nang Storage/Realtime va bo sung CRUD update/delete, du an se dat yeu cau mon hoc tot hon ro ret.
+### Ưu tiên P0 — Bắt buộc nộp bài
+
+1. Deploy **VPS + domain + SSL**; cập nhật `NEXT_PUBLIC_API_URL` production.
+2. Nộp LMS: báo cáo PDF + **link demo HTTPS** + GitHub + **`APPENDIX_AI_PROMPTS.md`** (đã chỉnh theo prompts thật của bạn).
+
+### Ưu tiên P1 — Tăng điểm vấn đáp
+
+1. Đọc `APPENDIX_AI_PROMPTS.md` và `supabase_setup.sql` — trả lời được câu hỏi RLS.
+2. Bổ sung UI **xóa prediction** trên `dashboard/history/page.tsx`.
+3. Dùng scaffold `frontend/src/lib/supabase/*` cho ít nhất một truy vấn đọc (ví dụ subscription) với **anon key + user JWT**.
+
+### Ưu tiên P2 — Tùy chọn
+
+1. Subscribe Supabase Realtime bảng `training_jobs` thay một phần WebSocket.
+2. Gỡ hoặc comment `backend/app/database.py` nếu không dùng SQLAlchemy.
+3. Cài shadcn/ui cho form admin (nếu còn thời gian).
+
+---
+
+## 5) Kết luận ngắn
+
+- **Frontend (Next App Router + TypeScript + Tailwind):** đạt tốt.
+- **Supabase (Auth + DB + Storage):** đạt ở tầng backend; cần bổ sung **frontend SSR client** và **demo production**.
+- **Docker:** đạt; cần chứng minh chạy được bằng screenshot.
+- **Điểm cần cứu gấp:** VPS/SSL, phụ lục AI, giải thích kiến trúc Supabase vs FastAPI, RLS thực tế.
+
+Xem báo cáo đánh giá chi tiết đầy đủ trong phiên chat đánh giá đồ án (18/05/2026).
