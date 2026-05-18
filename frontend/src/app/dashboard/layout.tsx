@@ -22,7 +22,8 @@ import {
   X,
   Loader2,
   ChevronRight,
-  Globe
+  Globe,
+  BookOpen
 } from 'lucide-react';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -59,6 +60,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { href: '/dashboard/inspect', icon: Search, label: t.inspectImage },
     { href: '/dashboard/history', icon: History, label: t.history },
     { href: '/dashboard/usage', icon: CreditCard, label: t.usagePlan },
+    { href: '/dashboard/guide', icon: BookOpen, label: t.userGuide },
   ];
 
   if (user?.is_admin) {
