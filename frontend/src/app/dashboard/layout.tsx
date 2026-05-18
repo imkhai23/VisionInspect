@@ -55,6 +55,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const NAV_ITEMS = [
     { href: '/dashboard', icon: LayoutDashboard, label: lang === 'vi' ? 'Tổng quan' : 'Dashboard' },
+    { href: '/dashboard/realtime', icon: Activity, label: lang === 'vi' ? 'Giám sát trực tiếp' : 'Real-time Monitor' },
     { href: '/dashboard/inspect', icon: Search, label: lang === 'vi' ? 'Kiểm tra ảnh' : 'Inspect Image' },
     { href: '/dashboard/history', icon: History, label: lang === 'vi' ? 'Lịch sử kiểm tra' : 'History' },
     { href: '/dashboard/usage', icon: CreditCard, label: lang === 'vi' ? 'Gói dịch vụ' : 'Usage & Plan' },
