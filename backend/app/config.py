@@ -50,6 +50,8 @@ class Settings(BaseSettings):
     s3_access_key_id: str = ""
     s3_secret_access_key: str = ""
     s3_bucket_name: str = "visioninspect-datasets"
+    # ── Camera Configuration ──────────────────────────────────────────────────
+    video_source: str = "0"
     enable_video_processor: bool = False
     active_model_manifest_path: str = "storage/models/active_model.json"
 

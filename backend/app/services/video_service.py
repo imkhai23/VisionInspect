@@ -168,6 +168,7 @@ _video_processor: Optional[VideoProcessor] = None
 def get_video_processor() -> VideoProcessor:
     global _video_processor
     if _video_processor is None:
-        # Default to webcam 0 for local dev
-        _video_processor = VideoProcessor(source="0")
+        settings = get_settings()
+        # Default to settings source (can be "0" for USB or "rtsp://..." for WiFi)
+        _video_processor = VideoProcessor(source=settings.video_source)
     return _video_processor

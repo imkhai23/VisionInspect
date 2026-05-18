@@ -10,19 +10,119 @@ import {
   Camera, 
   History,
   TrendingUp,
-  Settings
+  Settings,
+  Wifi,
+  Bluetooth,
+  Usb,
+  X,
+  Save
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 export default function RealtimeDashboard() {
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [showSettings, setShowSettings] = useState(false);
+  const [cameraSource, setCameraSource] = useState('USB: Webcam 0');
+  const [sourceType, setSourceType] = useState<'usb' | 'wifi' | 'bluetooth'>('usb');
+  const [ipAddress, setIpAddress] = useState('');
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
+  const handleSaveSettings = () => {
+    if (sourceType === 'wifi' && !ipAddress) {
+      toast.error('Vui lòng nhập địa chỉ IP/RTSP');
+      return;
+    }
+    
+    let sourceLabel = '';
+    if (sourceType === 'usb') sourceLabel = 'USB: Webcam 0';
+    else if (sourceType === 'wifi') sourceLabel = `WiFi: ${ipAddress}`;
+    else sourceLabel = 'Bluetooth Camera';
+
+    setCameraSource(sourceLabel);
+    setShowSettings(false);
+    toast.success('Đã cập nhật nguồn Camera. Vui lòng khởi động lại Backend để áp dụng.');
+  };
+
   return (
-    <div className="flex flex-col space-y-6 p-6 min-h-screen bg-slate-950 text-slate-50">
+    <div className="flex flex-col space-y-6 p-6 min-h-screen bg-slate-950 text-slate-50 relative">
+      {/* Settings Modal */}
+      {showSettings && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-slate-900 border border-slate-800 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-slate-800 flex items-center justify-between">
+              <h2 className="text-xl font-bold flex items-center gap-2">
+                <Settings className="w-5 h-5 text-blue-400" />
+                Cấu hình Camera
+              </h2>
+              <button onClick={() => setShowSettings(false)} className="text-slate-500 hover:text-white transition-colors">
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-6">
+              <div className="space-y-3">
+                <label className="text-xs font-black uppercase tracking-widest text-slate-500">Loại kết nối</label>
+                <div className="grid grid-cols-3 gap-3">
+                  <button 
+                    onClick={() => setSourceType('usb')}
+                    className={`flex flex-col items-center gap-2 p-3 rounded-xl border transition-all ${sourceType === 'usb' ? 'bg-blue-600/20 border-blue-500 text-blue-400' : 'bg-slate-800/50 border-slate-700 text-slate-400'}`}
+                  >
+                    <Usb size={20} />
+                    <span className="text-[10px] font-bold">USB</span>
+                  </button>
+                  <button 
+                    onClick={() => setSourceType('wifi')}
+                    className={`flex flex-col items-center gap-2 p-3 rounded-xl border transition-all ${sourceType === 'wifi' ? 'bg-blue-600/20 border-blue-500 text-blue-400' : 'bg-slate-800/50 border-slate-700 text-slate-400'}`}
+                  >
+                    <Wifi size={20} />
+                    <span className="text-[10px] font-bold">WiFi (IP)</span>
+                  </button>
+                  <button 
+                    onClick={() => setSourceType('bluetooth')}
+                    className={`flex flex-col items-center gap-2 p-3 rounded-xl border transition-all ${sourceType === 'bluetooth' ? 'bg-blue-600/20 border-blue-500 text-blue-400' : 'bg-slate-800/50 border-slate-700 text-slate-400'}`}
+                  >
+                    <Bluetooth size={20} />
+                    <span className="text-[10px] font-bold">Bluetooth</span>
+                  </button>
+                </div>
+              </div>
+
+              {sourceType === 'wifi' && (
+                <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                  <label className="text-xs font-black uppercase tracking-widest text-slate-500">Địa chỉ RTSP/HTTP URL</label>
+                  <input 
+                    type="text" 
+                    placeholder="rtsp://192.168.1.100:554/stream"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                    value={ipAddress}
+                    onChange={(e) => setIpAddress(e.target.value)}
+                  />
+                </div>
+              )}
+
+              {sourceType === 'bluetooth' && (
+                <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl animate-in fade-in slide-in-from-top-2">
+                  <p className="text-xs text-blue-300 leading-relaxed italic">
+                    Lưu ý: Camera Bluetooth yêu cầu sử dụng phần mềm bridge hoặc driver ảo để xuất stream RTSP. Hãy nhập URL RTSP vào mục WiFi sau khi kết nối.
+                  </p>
+                </div>
+              )}
+
+              <button 
+                onClick={handleSaveSettings}
+                className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-blue-900/20 transition-all"
+              >
+                <Save size={18} /> Lưu cấu hình
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -50,7 +150,7 @@ export default function RealtimeDashboard() {
             </span>
             <span className="flex items-center gap-2 text-xs font-medium text-blue-400">
               <Camera className="w-3 h-3" />
-              CAM: WEBCAM_01
+              CAM: {cameraSource}
             </span>
           </div>
         </div>
@@ -74,7 +174,10 @@ export default function RealtimeDashboard() {
             <button className="flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold py-3 rounded-xl border border-slate-700 transition-all">
               <Clock className="w-5 h-5" /> Pause Tracking
             </button>
-            <button className="flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold py-3 rounded-xl border border-slate-700 transition-all">
+            <button 
+              onClick={() => setShowSettings(true)}
+              className="flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold py-3 rounded-xl border border-slate-700 transition-all"
+            >
               <Settings className="w-5 h-5" /> Camera Settings
             </button>
             <button className="flex items-center justify-center gap-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 font-semibold py-3 rounded-xl border border-red-500/30 transition-all">
@@ -99,7 +202,6 @@ export default function RealtimeDashboard() {
             </div>
             
             <div className="flex-1 overflow-y-auto p-4 space-y-3 font-mono text-sm">
-              {/* Dummy data for layout - will be replaced by live updates */}
               <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg animate-in fade-in slide-in-from-right-2">
                 <div className="flex justify-between items-start mb-1">
                   <span className="text-red-400 font-bold uppercase text-xs flex items-center gap-1">
