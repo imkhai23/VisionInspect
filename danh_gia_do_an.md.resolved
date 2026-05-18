@@ -1,0 +1,322 @@
+# BÁO CÁO ĐÁNH GIÁ ĐỒ ÁN CUỐI KỲ
+## Môn: Các công nghệ mới trong phát triển phần mềm
+### Đề tài: VisionInspect — AI Product Defect Detection SaaS
+**Đánh giá theo vai trò Giảng viên | CTK46-PM | 18/05/2026**
+
+---
+
+## PHẦN 1: ĐÁNH GIÁ TỪNG TIÊU CHÍ BẮT BUỘC
+
+### TIÊU CHÍ 1: Frontend — Next.js App Router + TailwindCSS ✅ ĐẠT PHẦN LỚN
+
+**Yêu cầu PDF:** Next.js App Router, TypeScript, Server/Client Components, Server Actions, TailwindCSS hoặc shadcn/ui.
+
+| Mục | Trạng thái | Minh chứng |
+|-----|-----------|------------|
+| Next.js App Router | ✅ Đạt | Toàn bộ `src/app/` dùng App Router (Next.js 14.2.15) |
+| TypeScript | ✅ Đạt | `typescript: ^5`, type annotations trong `types/`, tất cả file `.tsx` |
+| Client Components | ✅ Đạt | `'use client'` ở đầu tất cả pages (training, datasets, inspect) |
+| TailwindCSS | ✅ Đạt | `tailwindcss: ^4.3.0`, custom CSS trong `globals.css` |
+| Server Components | ⚠️ Thiếu | Toàn bộ pages dùng `'use client'` — chưa có Server Component thực sự |
+| Server Actions | ❌ Không có | Không tìm thấy `'use server'` action nào trong codebase |
+| Data Fetching Server-side | ⚠️ Thiếu | Data fetching 100% client-side qua `axios` → `api.ts` |
+| shadcn/ui | ❌ Không dùng | Chỉ dùng Tailwind thuần + lucide-react icons |
+
+**Khuyến nghị:** Thêm ít nhất 1 Server Component (ví dụ: layout hoặc trang tĩnh) và 1 Server Action (ví dụ: form xóa prediction). Đây là tính năng cốt lõi của Next.js 14 mà đề cương yêu cầu rõ ràng.
+
+---
+
+### TIÊU CHÍ 2: Backend — Supabase Auth + Database ✅ ĐẠT TỐT
+
+**Yêu cầu PDF:** Supabase Auth + Database + ít nhất 1 tính năng bổ sung (Storage, Realtime).
+
+| Mục | Trạng thái | Minh chứng |
+|-----|-----------|------------|
+| Supabase Auth | ✅ Đạt | `supabase_auth.py`, JWT middleware, đăng ký/đăng nhập/đăng xuất |
+| Supabase Database | ✅ Đạt tốt | 10+ bảng: users, predictions, subscriptions, datasets, training_jobs, model_versions... |
+| Supabase Storage | ✅ Đạt | Upload ảnh predictions lên bucket Supabase Storage |
+| Supabase Realtime | ⚠️ Một phần | Dùng FastAPI WebSocket thay vì Supabase Realtime SDK — cần giải thích |
+| RLS Policies | ✅ Đạt | `supabase_setup.sql` có RLS + policies `auth.uid() = user_id` |
+| Trigger Auth Sync | ✅ Đạt | `handle_new_user()` trigger auto-tạo profile sau khi đăng ký |
+
+> **Lưu ý vấn đáp:** Sinh viên cần giải thích rõ tại sao dùng FastAPI làm AI layer song song với Supabase. Câu trả lời đúng: Supabase không thể chạy model PyTorch/YOLOv8 — FastAPI cần thiết cho AI inference layer.
+
+---
+
+### TIÊU CHÍ 3: Containerization — Docker ✅ ĐẠT TỐT
+
+**Yêu cầu PDF:** Dockerfile + Docker Compose, chạy được bằng `docker compose up`.
+
+| Mục | Trạng thái | Minh chứng |
+|-----|-----------|------------|
+| `docker-compose.yml` | ✅ Đạt | 4 services: redis, backend, frontend, training-worker |
+| Backend Dockerfile | ✅ Đạt | `backend/Dockerfile` tồn tại |
+| Frontend Dockerfile | ✅ Đạt | `frontend/Dockerfile` tồn tại |
+| Redis service | ✅ Đạt | `redis:7-alpine` cho training queue |
+| Training Worker service | ✅ Đạt | Service riêng `visioninspect_training_worker` |
+| Volume mounts | ✅ Đạt | `./ai/weights` và `./storage` được mount cho cả backend và worker |
+| Multi-stage build | ⚠️ Cần kiểm tra | Cần xác nhận frontend Dockerfile dùng Next.js standalone output |
+| Test `docker compose up` | ❗ Chưa có minh chứng | **Bắt buộc phải chạy và chụp màn hình cho báo cáo** |
+
+---
+
+### TIÊU CHÍ 4: Deployment — VPS + Domain + SSL ❌ CHƯA ĐẠT
+
+**Yêu cầu PDF:** Deploy lên VPS có URL thực, HTTPS hoạt động. Demo bắt buộc trên URL production.
+
+| Mục | Trạng thái |
+|-----|-----------|
+| VPS deployment | ❌ Chưa có — chỉ chạy localhost |
+| Domain thực | ❌ Chưa có |
+| SSL/HTTPS | ❌ Chưa có |
+| URL production | ❌ Chưa có |
+
+**Đây là điểm yếu nghiêm trọng nhất.** Quy chế ghi rõ demo trực tiếp trên URL production, điểm thấp hơn nếu dùng video demo.
+
+**Giải pháp nhanh (1–2 ngày):**
+- **Railway.app**: Deploy miễn phí, SSL tự động, hỗ trợ Docker Compose
+- **Render.com**: Tương tự Railway, free tier cho web service
+- **Vercel** (frontend) + **Fly.io** (backend FastAPI): Free tier đủ dùng
+- **DigitalOcean $6/tháng** + Cloudflare SSL: Gần VPS thật nhất
+
+---
+
+### TIÊU CHÍ 5: GitHub Repository ✅ ĐẠT CƠ BẢN
+
+| Mục | Trạng thái | Minh chứng |
+|-----|-----------|------------|
+| Repository | ✅ Đạt | `https://github.com/imkhai23/VisionInspect` |
+| Commit history | ✅ Có | Đã push nhiều commits |
+| Conventional Commits | ⚠️ Một phần | Commit `feat: complete supabase integration...` đúng format, cần thêm |
+| `.gitignore` | ✅ Đầy đủ | `.env`, `storage/`, `node_modules/`, `.venv/` đều ignored |
+
+**Khuyến nghị:** Thêm nhiều commits nhỏ theo format `feat:`, `fix:`, `docs:`, `refactor:` để thể hiện quá trình phát triển rõ ràng.
+
+---
+
+### TIÊU CHÍ 6: AI Tool — Minh chứng ✅ ĐẠT TỐT
+
+| Mục | Trạng thái | Minh chứng |
+|-----|-----------|------------|
+| AI tool sử dụng | ✅ Đạt | Cursor IDE + LLM ghi trong `APPENDIX_AI_PROMPTS.md` |
+| Số lượng prompts | ✅ Đạt | 7 prompts chi tiết (yêu cầu >5) |
+| Giải thích mục đích | ✅ Đạt | Mỗi prompt có mục đích, kết quả AI, chỉnh sửa thủ công, bài học |
+| Prompt đầy đủ verbatim | ✅ Đạt | Prompt #1 (Schema RLS) và #4 (Docker) viết đầy đủ |
+| Giới hạn AI | ✅ Đạt | Bảng rủi ro và cách xử lý — rất chuyên nghiệp |
+
+---
+
+## PHẦN 2: YÊU CẦU CHỨC NĂNG TỐI THIỂU
+
+| # | Tính năng | Trạng thái | Minh chứng |
+|---|-----------|-----------|------------|
+| 1 | Authentication | ✅ Đạt tốt | Đăng ký, đăng nhập, đăng xuất Supabase Auth + JWT middleware |
+| 2 | CRUD dữ liệu | ✅ Đạt tốt | predictions, datasets, training_jobs, model_versions đều có full CRUD |
+| 3 | Giao diện đẹp/responsive | ✅ Đạt tốt | Glassmorphic dark UI, Tailwind, Recharts, Lucide icons |
+| 4 | RLS / Phân quyền | ✅ Đạt | RLS trong SQL; Admin role check trong FastAPI middleware |
+| 5 | File upload | ✅ Đạt | Upload ảnh predict + upload dataset images/labels (react-dropzone) |
+| 6 | Dockerize | ✅ Đạt | `docker-compose.yml` 4 services hoạt động |
+| 7 | Deployment | ❌ Chưa đạt | Chỉ localhost, chưa có URL production có HTTPS |
+
+---
+
+## PHẦN 3: TÍNH NĂNG VƯỢT TRỘI — ĐIỂM CỘNG
+
+Dự án có nhiều tính năng vượt xa yêu cầu tối thiểu, đây là lợi thế lớn khi demo:
+
+| Tính năng nổi bật | Mức độ ấn tượng |
+|-------------------|----------------|
+| YOLOv8 AI Inference tích hợp hoàn chỉnh | ⭐⭐⭐⭐⭐ |
+| AI Training Dashboard với WebSocket real-time | ⭐⭐⭐⭐⭐ |
+| Dataset Manager (upload, split, preview, xóa) | ⭐⭐⭐⭐ |
+| Model Registry (Deploy/Rollback/Activate) | ⭐⭐⭐⭐ |
+| MJPEG Camera Live Stream | ⭐⭐⭐⭐ |
+| Redis + RQ Training Queue với fallback | ⭐⭐⭐ |
+| Stripe Subscription (Free/Pro) | ⭐⭐⭐ |
+| Telegram Alert khi phát hiện lỗi | ⭐⭐⭐ |
+| Đa ngôn ngữ VI/EN toàn bộ UI | ⭐⭐ |
+| Admin Hub riêng biệt | ⭐⭐⭐ |
+
+---
+
+## PHẦN 4: ĐIỂM YẾU CÓ THỂ BỊ TRỪ ĐIỂM
+
+| Điểm yếu | Mức độ | Giải pháp cụ thể |
+|-----------|--------|-----------------|
+| Chưa deploy VPS + SSL | ❗ Nghiêm trọng | Deploy Railway.app trong 1–2 ngày |
+| Thiếu Server Components | ⚠️ Trung bình | Chuyển layout.tsx thành Server Component |
+| Thiếu Server Actions | ⚠️ Trung bình | Thêm 1 form action với `'use server'` |
+| Chưa test `docker compose up` | ⚠️ Trung bình | Chạy và chụp screenshot terminal |
+| Commit history còn ít | ⚠️ Nhẹ | Thêm commits nhỏ với Conventional format |
+| Báo cáo toàn văn chưa có | ❗ Quan trọng (40% điểm) | Viết báo cáo PDF >= 20 trang ngay |
+
+---
+
+## PHẦN 5: 15 CÂU HỎI GIẢNG VIÊN CÓ THỂ HỎI TRONG VẤN ĐÁP
+
+**Nhóm kiến trúc:**
+1. *"Tại sao em dùng FastAPI thay vì để Supabase làm backend hoàn toàn?"*
+   → FastAPI cần thiết để chạy YOLOv8/PyTorch — Supabase không support ML inference.
+2. *"Mô tả luồng dữ liệu từ khi user upload ảnh đến khi nhận kết quả?"*
+   → Frontend → POST `/predict` → FastAPI → YOLOv8 → Supabase Storage + DB → JSON response.
+3. *"RLS là gì và em implement thế nào?"*
+   → Row Level Security — SQL policy `CREATE POLICY ... USING (auth.uid() = user_id)`.
+4. *"Sự khác nhau giữa App Router và Pages Router?"*
+   → App Router: Server Components mặc định, layouts lồng nhau, Server Actions. Pages Router: client-side cũ.
+
+**Nhóm Supabase:**
+5. *"Trigger `handle_new_user` làm gì?"*
+   → Auto-insert vào `public.users` và tạo subscription free sau khi đăng ký.
+6. *"Em validate JWT token như thế nào trong FastAPI?"*
+   → `supabase.auth.get_user(token)` — dùng Supabase SDK, không tự parse JWT.
+7. *"Supabase Storage em dùng để làm gì?"*
+   → Lưu ảnh predictions upload từ user.
+
+**Nhóm Docker:**
+8. *"Docker Compose em có bao nhiêu service? Mỗi service làm gì?"*
+   → 4 services: redis (queue), backend (FastAPI+AI), frontend (Next.js), training-worker.
+9. *"Volume mount `./ai/weights:/app/ai/weights` có mục đích gì?"*
+   → Chia sẻ model file `.pt` giữa host và container, không cần rebuild image khi đổi model.
+10. *"`docker compose up` em đã test chưa, kết quả ra sao?"*
+    → ❗ Phải test trước buổi bảo vệ và có screenshot.
+
+**Nhóm AI:**
+11. *"Em dùng AI tool như thế nào, có kiểm tra code AI sinh ra không?"*
+    → Cursor IDE, mọi code đều review, chạy build test trước commit.
+12. *"YOLOv8 là gì? Tại sao chọn YOLOv8n?"*
+    → You Only Look Once v8, kiến trúc detection real-time. `n` = nano — nhỏ nhất, phù hợp máy không có GPU mạnh.
+13. *"Dataset YOLO format cần cấu trúc thư mục như thế nào?"*
+    → `images/train/`, `images/val/`, `labels/train/`, `labels/val/`, `data.yaml`.
+14. *"WebSocket trong training dashboard hoạt động ra sao?"*
+    → FastAPI WS endpoint push JSON mỗi giây: job status + recent logs. Frontend nhận và render Recharts.
+15. *"Tại sao dùng Redis Queue cho training? Nếu không có Redis thì sao?"*
+    → Redis cho phép queue nhiều job, worker chạy riêng. Nếu không có Redis → fallback `BackgroundTasks` của FastAPI.
+
+---
+
+## PHẦN 6: CẤU TRÚC BÁO CÁO TOÀN VĂN ĐỀ XUẤT (50+ TRANG)
+
+### Chương 1: Trang bìa + Mục lục (2 trang)
+- Thông tin: Môn học, Lớp CTK46-PM, Họ tên, MSSV, Ngày nộp 29/05/2026
+
+### Chương 2: Giới thiệu đề tài (4–5 trang)
+- Bối cảnh: Kiểm tra lỗi sản phẩm thủ công tốn kém, dễ sai sót
+- Mục tiêu: SaaS tự động phát hiện lỗi bằng Computer Vision
+- Đối tượng: Admin nhà máy, Quality Control operator
+- **Screenshot:** Landing page, dashboard tổng quan
+
+### Chương 3: Công nghệ sử dụng (6–8 trang)
+Giới thiệu và giải thích vai trò từng công nghệ:
+- Frontend: Next.js 14, TypeScript, TailwindCSS, Recharts, Lucide
+- Backend: FastAPI, Pydantic v2, Uvicorn
+- AI/ML: YOLOv8 (Ultralytics), PyTorch 2.4.1, OpenCV
+- Database/Auth: Supabase PostgreSQL + Auth + Storage
+- Queue: Redis + RQ → fallback BackgroundTasks
+- Containerization: Docker + Docker Compose 3.9
+- Thanh toán: Stripe, Cảnh báo: Telegram Bot
+- **Sơ đồ cần có:** Tech stack overview diagram
+
+### Chương 4: Kiến trúc hệ thống (8–10 trang)
+- **Sơ đồ kiến trúc tổng thể:** Browser → Next.js → FastAPI → (Supabase DB + YOLOv8 + Redis)
+- **Sơ đồ ERD đầy đủ:** 10 bảng với relationships
+- **Luồng xác thực:** Supabase Auth JWT → FastAPI middleware → RLS
+- **Luồng AI Training:** Form → POST API → Redis Queue → Training Worker → Supabase → WebSocket
+- **Luồng AI Inference:** Upload → FastAPI predict → YOLOv8 → Supabase Storage → Response
+- **Cấu trúc folder** (screenshot tree từ VSCode)
+
+### Chương 5: Phân tích chức năng chi tiết (15–18 trang)
+
+**5.1 Authentication (2 trang)**
+- Đăng ký, đăng nhập, bảo vệ route
+- RLS policies, JWT middleware, trigger `handle_new_user`
+- Screenshot: Form login, dashboard sau login
+
+**5.2 AI Defect Detection — Phát hiện lỗi (3 trang)**
+- Upload ảnh → YOLOv8 inference → bounding box → lưu history
+- Trang Inspect với drag-drop upload
+- Screenshot: Kết quả detection với bounding box
+
+**5.3 Dataset Manager (3 trang)**
+- CRUD dataset, upload ảnh + nhãn YOLO format
+- Split train/val/test tự động
+- Preview grid với hover-delete
+- Screenshot: Dataset list, upload UI, preview modal
+
+**5.4 AI Training Dashboard (4 trang)**
+- Form cấu hình: epochs, batch_size, image_size, learning_rate, optimizer
+- WebSocket real-time: Epoch counter, Loss, mAP50, ETA
+- Recharts live line chart
+- Training logs panel
+- Screenshot: Training page với biểu đồ đang chạy
+
+**5.5 Model Registry (2 trang)**
+- Version management: Deploy/Rollback/Activate/Delete
+- Active model manifest file `active_model.json`
+- Screenshot: Model cards với ACTIVE badge
+
+**5.6 Subscription & Usage (2 trang)**
+- Free/Pro plan, Stripe checkout
+- Usage counter (free: 50 predictions/tháng)
+- Screenshot: Subscription page
+
+### Chương 6: AI trong phát triển (4–5 trang)
+- Giới thiệu Cursor IDE
+- Bảng đầy đủ 7 prompts từ `APPENDIX_AI_PROMPTS.md`
+- Prompt #1 (Schema RLS) và #4 (Docker) verbatim đầy đủ
+- Bảng rủi ro khi dùng AI và cách xử lý
+- Kết luận: AI tiết kiệm ~60% thời gian boilerplate
+
+### Chương 7: Docker & Deployment (5–6 trang)
+- Giải thích từng service trong `docker-compose.yml`
+- Walkthrough `backend/Dockerfile`
+- Walkthrough `frontend/Dockerfile` (Next.js standalone)
+- **Screenshot terminal:** `docker compose up --build` thành công
+- Quy trình deploy VPS (Railway/Render/DigitalOcean)
+- Cấu hình Nginx reverse proxy
+- SSL với Cloudflare hoặc Certbot
+
+### Chương 8: Kết luận & Hạn chế (2–3 trang)
+- Tổng kết: 15+ tính năng hoàn thành, kiến trúc full-stack hoàn chỉnh
+- Hạn chế: Chưa có CI/CD, camera stream phụ thuộc phần cứng
+- Hướng phát triển: Mobile app, Edge deployment, MLOps pipeline tự động
+
+### Chương 9: Tài liệu tham khảo (1 trang)
+- Next.js Docs, Supabase Docs, Ultralytics YOLOv8 Docs
+- FastAPI Docs, Docker Compose Docs, Stripe API Docs
+
+### Phụ lục A: AI Prompts đầy đủ (3–4 trang)
+### Phụ lục B: ERD Database diagram
+### Phụ lục C: Bảng API Endpoints (method, path, auth, mô tả)
+### Phụ lục D: Hướng dẫn cài đặt và chạy local
+
+---
+
+## PHẦN 7: CHECKLIST HÀNH ĐỘNG TRƯỚC NỘP (29/05/2026)
+
+### Ưu tiên cao — Làm ngay:
+- [ ] Deploy lên Railway.app hoặc Render.com (tạo URL HTTPS)
+- [ ] Chạy `docker compose up --build` và chụp màn hình
+- [ ] Viết báo cáo toàn văn PDF >= 20 trang (Times New Roman 13, 1.5 spacing)
+- [ ] Đăng ký đề tài Google Sheets trước 20/05/2026
+
+### Ưu tiên trung bình:
+- [ ] Thêm 1 Server Component trong Next.js
+- [ ] Thêm 1 Server Action
+- [ ] Thêm nhiều commits nhỏ Conventional Commits
+
+### Tùy chọn nếu có thời gian:
+- [ ] Cấu hình Nginx + SSL thật
+- [ ] Thêm GitHub Actions CI cơ bản
+
+---
+
+## PHẦN 8: ƯỚC TÍNH ĐIỂM
+
+| Thành phần | Trọng số | Điểm hiện tại | Điểm sau cải thiện |
+|-----------|---------|--------------|-------------------|
+| Báo cáo toàn văn | 40% | 0/10 (chưa viết) | 8/10 nếu viết tốt |
+| Sản phẩm demo | 30% | 8.5/10 (thiếu VPS) | 9.5/10 nếu có URL |
+| Vấn đáp | 30% | 8/10 (cần ôn) | 9/10 nếu ôn kỹ |
+| **Tổng ước tính** | 100% | **~4/10 tổng** | **~8.7/10** |
+
+> **Kết luận của giảng viên:** Đây là dự án có độ phức tạp kỹ thuật cao, vượt xa yêu cầu tối thiểu của môn học. Hệ thống AI training pipeline, model registry, WebSocket monitoring, và MJPEG streaming là các tính năng production-grade hiếm gặp ở cấp sinh viên. Điểm yếu duy nhất nghiêm trọng là **chưa deploy production** và **báo cáo toàn văn chưa có**. Giải quyết được hai điểm này, dự án xứng đáng đạt điểm A.
