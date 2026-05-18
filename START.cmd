@@ -8,29 +8,26 @@ set "FRONTEND_DIR=%ROOT%frontend"
 set "VENV_ACTIVATE=%ROOT%.venv\Scripts\activate.bat"
 
 if not exist "%VENV_ACTIVATE%" (
-	echo Khong tim thay .venv o "%ROOT%".
-	echo Hay tao virtual environment truoc khi chay file nay.
-	pause
-	exit /b 1
+    echo Khong tim thay .venv o "%ROOT%".
+    echo Hay tao virtual environment truoc khi chay file nay.
+    pause
+    exit /b 1
 )
 
 if not exist "%BACKEND_DIR%\app\main.py" (
-	echo Khong tim thay backend tai "%BACKEND_DIR%".
-	pause
-	exit /b 1
+    echo Khong tim thay backend tai "%BACKEND_DIR%".
+    pause
+    exit /b 1
 )
 
 if not exist "%FRONTEND_DIR%\package.json" (
-	echo Khong tim thay frontend tai "%FRONTEND_DIR%".
-	pause
-	exit /b 1
+    echo Khong tim thay frontend tai "%FRONTEND_DIR%".
+    pause
+    exit /b 1
 )
 
 for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":3000" ^| findstr "LISTENING"') do (
-	taskkill /F /PID %%p >nul 2>&1
-)
-for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":8000" ^| findstr "LISTENING"') do (
-	taskkill /F /PID %%p >nul 2>&1
+    taskkill /F /PID %%p >nul 2>&1
 )
 
 echo Dang khoi dong VisionInspect...

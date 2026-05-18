@@ -267,3 +267,19 @@ def activate_model_version(client: Client, version_id: str, deployed_by: Optiona
 
     write_active_model_manifest(version)
     return activated.data[0]
+
+
+def sync_dataset_stats(client: Client, dataset_id: str) -> dict[str, Any]:
+    dataset = get_dataset_by_id(client, dataset_id)
+    if not dataset:
+        raise ValueError("Dataset not found")
+    assets = list_dataset_assets(client, dataset_id)
+    stats = compute_dataset_stats(dataset, assets)
+    updated = update_dataset(client, dataset_id, {
+        "image_count": stats["image_count"],
+        "label_count": stats["label_count"],
+        "train_count": stats["train_count"],
+        "val_count": stats["val_count"],
+        "test_count": stats["test_count"],
+    })
+    return updated

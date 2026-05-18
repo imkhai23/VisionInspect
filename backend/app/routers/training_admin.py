@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, WebSocket, WebSocketDisconnect, status
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, UploadFile, WebSocket, WebSocketDisconnect, status
 from supabase import Client
 
 from app.middleware.auth import CurrentAdmin, _sync_local_user
@@ -152,6 +152,35 @@ async def api_list_dataset_assets(
     return [_dataset_asset_response(item) for item in list_dataset_assets(supabase, dataset_id)]
 
 
+@router.delete("/datasets/{dataset_id}/assets/{asset_id}")
+async def api_delete_asset(
+    dataset_id: str,
+    asset_id: str,
+    admin: CurrentAdmin,
+    supabase: Client = Depends(get_supabase_client),
+):
+    asset_row = supabase.table("dataset_assets").select("*").eq("id", asset_id).execute().data
+    if not asset_row:
+        raise HTTPException(status_code=404, detail="Asset not found")
+    
+    asset = asset_row[0]
+    storage = get_dataset_storage()
+    try:
+        storage.delete_asset(asset["file_path"])
+    except Exception as e:
+        print(f"Failed to delete physical asset: {e}")
+        
+    delete_dataset_asset(supabase, asset_id)
+    
+    from app.services.training_registry import sync_dataset_stats
+    try:
+        sync_dataset_stats(supabase, dataset_id)
+    except Exception as e:
+        print(f"Failed to sync dataset stats after deletion: {e}")
+        
+    return {"ok": True}
+
+
 @router.get("/datasets/{dataset_id}/stats")
 async def api_dataset_stats(
     dataset_id: str,
@@ -195,6 +224,12 @@ async def api_upload_dataset_assets(
         }
         row = upsert_dataset_asset(supabase, asset_row)
         uploaded_assets.append(_dataset_asset_response(row))
+
+    from app.services.training_registry import sync_dataset_stats
+    try:
+        sync_dataset_stats(supabase, dataset_id)
+    except Exception as e:
+        print(f"Failed to sync dataset stats: {e}")
 
     return DatasetUploadResponse(dataset_id=dataset_id, uploaded=len(uploaded_assets), assets=uploaded_assets)
 
@@ -245,6 +280,12 @@ async def api_upload_zip_dataset(
             row = upsert_dataset_asset(supabase, asset_row)
             uploaded_assets.append(_dataset_asset_response(row))
 
+    from app.services.training_registry import sync_dataset_stats
+    try:
+        sync_dataset_stats(supabase, dataset_id)
+    except Exception as e:
+        print(f"Failed to sync dataset stats: {e}")
+
     return DatasetUploadResponse(dataset_id=dataset_id, uploaded=len(uploaded_assets), assets=uploaded_assets)
 
 
@@ -282,15 +323,25 @@ async def api_list_training_jobs(
 @router.post("/training-jobs", response_model=TrainingJobResponse, status_code=status.HTTP_201_CREATED)
 async def api_create_training_job(
     payload: TrainingJobCreateRequest,
+    background_tasks: BackgroundTasks,
     admin: CurrentAdmin,
     supabase: Client = Depends(get_supabase_client),
 ):
     dataset = get_dataset_by_id(supabase, str(payload.dataset_id))
     if not dataset:
         raise HTTPException(status_code=404, detail="Dataset not found")
-    job = create_training_job(supabase, payload.model_dump(), created_by=str(admin["id"]))
-    get_training_queue().enqueue(run_training_job, str(job["id"]), job_timeout=60 * 60 * 24)
-    add_training_log(supabase, str(job["id"]), "Training job queued", metadata={"dataset": dataset["slug"]})
+    job = create_training_job(supabase, payload.model_dump(mode="json"), created_by=str(admin["id"]))
+    
+    try:
+        queue = get_training_queue()
+        queue.connection.ping()
+        queue.enqueue(run_training_job, str(job["id"]), job_timeout=60 * 60 * 24)
+        add_training_log(supabase, str(job["id"]), "Training job queued in Redis Queue", metadata={"dataset": dataset["slug"]})
+    except Exception as e:
+        print(f"Redis queue connection failed. Running locally using FastAPI BackgroundTasks. Error: {e}")
+        background_tasks.add_task(run_training_job, str(job["id"]))
+        add_training_log(supabase, str(job["id"]), "Training job initialized locally in FastAPI background thread", metadata={"dataset": dataset["slug"]})
+        
     return _job_response(job)
 
 

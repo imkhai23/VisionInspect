@@ -9,10 +9,11 @@ const TOKEN_EXPIRY_DAYS = 7;
 
 export const tokenStorage = {
   set: (token: string) => {
+    const isSecure = typeof window !== 'undefined' && window.location.protocol === 'https:';
     Cookies.set(TOKEN_KEY, token, {
       expires: TOKEN_EXPIRY_DAYS,
       path: '/',
-      secure: process.env.NODE_ENV === 'production',
+      secure: isSecure,
       sameSite: 'lax',
     });
   },

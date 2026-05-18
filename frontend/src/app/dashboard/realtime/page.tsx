@@ -1,5 +1,8 @@
+"use client";
+
 import React, { useState, useEffect } from 'react';
 import { LiveView } from '@/components/LiveView';
+import { predictApi } from '@/lib/api';
 import { 
   Activity, 
   CheckCircle, 
@@ -13,7 +16,9 @@ import {
   Bluetooth,
   Usb,
   X,
-  Save
+  Save,
+  RefreshCw,
+  Sparkles
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -25,11 +30,110 @@ export default function RealtimeDashboard() {
   const [cameraSource, setCameraSource] = useState('USB: Webcam 0');
   const [sourceType, setSourceType] = useState<'usb' | 'wifi' | 'bluetooth'>('usb');
   const [ipAddress, setIpAddress] = useState('');
+  const [cameraEnabled, setCameraEnabled] = useState(false);
+  const [snapshotLoading, setSnapshotLoading] = useState(false);
+  const [snapshotPreview, setSnapshotPreview] = useState<string | null>(null);
+  const [snapshotFile, setSnapshotFile] = useState<File | null>(null);
+  const [analysisLoading, setAnalysisLoading] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState<any>(null);
+  const [snapshotError, setSnapshotError] = useState<string | null>(null);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
+
+  const translateLabel = (label: string) => {
+    if (!label) return '';
+    const l = label.toLowerCase().trim();
+    if (lang === 'en') {
+      const map: Record<string, string> = {
+        good: 'Good',
+        dent: 'Dent',
+        crack: 'Crack',
+        scratch: 'Scratch',
+        missing_part: 'Missing Part',
+        contamination: 'Contamination',
+        normal: 'Normal',
+      };
+      return map[l] || label;
+    }
+    const map: Record<string, string> = {
+      good: 'Đạt chất lượng',
+      dent: 'Vết móp',
+      crack: 'Vết nứt',
+      scratch: 'Vết trầy xước',
+      missing_part: 'Thiếu linh kiện',
+      contamination: 'Bị nhiễm bẩn',
+      normal: 'Bình thường',
+    };
+    return map[l] || label;
+  };
+
+  const handleCaptureSnapshot = async () => {
+    if (!cameraEnabled) {
+      toast.error(lang === 'vi' ? 'Hãy bật camera trước khi chụp.' : 'Please turn on the camera before capturing.');
+      return;
+    }
+
+    setSnapshotLoading(true);
+    setSnapshotError(null);
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/stream/snapshot`);
+      if (!response.ok) {
+        throw new Error('Snapshot failed');
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const file = new File([blob], `realtime_${Date.now()}.jpg`, { type: 'image/jpeg' });
+
+      setSnapshotPreview((current) => {
+        if (current) URL.revokeObjectURL(current);
+        return url;
+      });
+      setSnapshotFile(file);
+      setAnalysisResult(null);
+      toast.success(lang === 'vi' ? 'Đã lấy khung hình từ luồng live.' : 'Captured frame from live stream.');
+    } catch (error) {
+      setSnapshotError(lang === 'vi' ? 'Không thể chụp khung hình từ luồng live.' : 'Unable to capture a frame from the live stream.');
+      toast.error(lang === 'vi' ? 'Không thể chụp khung hình từ luồng live.' : 'Unable to capture a frame from the live stream.');
+    } finally {
+      setSnapshotLoading(false);
+    }
+  };
+
+  const handleAnalyzeSnapshot = async () => {
+    if (!snapshotFile) return;
+    setAnalysisLoading(true);
+    try {
+      const response = await predictApi.predict(snapshotFile);
+      setAnalysisResult(response.data);
+      toast.success(t.analysisComplete);
+    } catch (error) {
+      toast.error(t.analysisFailed);
+    } finally {
+      setAnalysisLoading(false);
+    }
+  };
+
+  const handleResetSnapshot = () => {
+    if (snapshotPreview) URL.revokeObjectURL(snapshotPreview);
+    setSnapshotPreview(null);
+    setSnapshotFile(null);
+    setAnalysisResult(null);
+    setSnapshotError(null);
+  };
+
+  const handleToggleCamera = () => {
+    setCameraEnabled((prev) => {
+      const next = !prev;
+      if (!next) {
+        setSnapshotError(null);
+      }
+      return next;
+    });
+  };
 
   const handleSaveSettings = async () => {
     if (sourceType === 'wifi' && !ipAddress) {
@@ -183,13 +287,127 @@ export default function RealtimeDashboard() {
         <div className="lg:col-span-8 space-y-6">
           {/* Live Video Section */}
           <div className="bg-slate-900 rounded-2xl border border-slate-800 p-1 shadow-inner overflow-hidden">
-            <LiveView />
+            {cameraEnabled ? (
+              <LiveView />
+            ) : (
+              <div className="aspect-video flex flex-col items-center justify-center bg-slate-950 text-slate-400 gap-3">
+                <Camera className="w-10 h-10 text-slate-600" />
+                <p className="text-sm font-medium">
+                  {lang === 'vi' ? 'Camera đang tắt' : 'Camera is off'}
+                </p>
+                <button
+                  onClick={handleToggleCamera}
+                  className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold"
+                >
+                  {lang === 'vi' ? 'Bật camera' : 'Turn on camera'}
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Live camera inspection panel */}
+          <div className="bg-slate-900 rounded-2xl border border-slate-800 p-5 space-y-4">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <h3 className="font-bold flex items-center gap-2 text-white">
+                  <Camera className="w-5 h-5 text-blue-400" />
+                  {lang === 'vi' ? 'Kiểm tra từ camera trực tiếp' : 'Inspect from live camera'}
+                </h3>
+                <p className="text-xs text-slate-500 mt-1">
+                  {lang === 'vi' ? 'Chụp khung hình từ luồng live rồi kiểm tra ảnh ngay tại màn giám sát.' : 'Capture a frame from the live stream and inspect it here.'}
+                </p>
+              </div>
+              <span className="text-[10px] font-bold bg-blue-500/10 text-blue-400 px-2 py-1 rounded border border-blue-500/20 uppercase">
+                {lang === 'vi' ? 'Camera' : 'Camera'}
+              </span>
+            </div>
+
+            {snapshotError && (
+              <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-300">
+                {snapshotError}
+              </div>
+            )}
+
+            <div className="grid md:grid-cols-[1.2fr_0.8fr] gap-4 items-start">
+              <div className="rounded-2xl border border-slate-800 bg-slate-950 overflow-hidden min-h-[260px] flex items-center justify-center relative">
+                {snapshotPreview ? (
+                  <img src={snapshotPreview} alt="Captured frame" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="text-center p-6">
+                    <div className="w-16 h-16 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mx-auto mb-3">
+                      <Camera className="w-7 h-7 text-blue-400" />
+                    </div>
+                    <p className="text-sm text-slate-400">
+                      {lang === 'vi' ? 'Nhấn chụp khung hình để bắt đầu.' : 'Press capture to begin.'}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-3">
+                <button
+                  onClick={handleCaptureSnapshot}
+                  disabled={snapshotLoading || !cameraEnabled}
+                  className="w-full flex items-center justify-center gap-2 rounded-xl px-4 py-3 font-semibold bg-blue-600 hover:bg-blue-500 disabled:opacity-50 transition-all"
+                >
+                  {snapshotLoading ? <Activity className="w-4 h-4 animate-pulse" /> : <Camera className="w-4 h-4" />}
+                  {lang === 'vi' ? 'Chụp từ luồng live' : 'Capture from live stream'}
+                </button>
+
+                <button
+                  onClick={handleAnalyzeSnapshot}
+                  disabled={!snapshotFile || analysisLoading}
+                  className="w-full flex items-center justify-center gap-2 rounded-xl px-4 py-3 font-semibold bg-slate-800 hover:bg-slate-700 border border-slate-700 disabled:opacity-50 transition-all"
+                >
+                  {analysisLoading ? <Activity className="w-4 h-4 animate-pulse" /> : <Sparkles className="w-4 h-4" />}
+                  {analysisLoading ? t.analyzingBtn : t.startInspectionBtn}
+                </button>
+
+                <button
+                  onClick={handleResetSnapshot}
+                  className="w-full flex items-center justify-center gap-2 rounded-xl px-4 py-3 font-semibold bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 transition-all"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  {lang === 'vi' ? 'Xóa ảnh chụp' : 'Clear snapshot'}
+                </button>
+              </div>
+            </div>
+
+            {analysisResult && (
+              <div className={`rounded-2xl border p-4 ${analysisResult?.label === 'good' || analysisResult?.label === 'normal' ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-red-500/5 border-red-500/20'}`}>
+                <div className="flex items-center justify-between gap-3 mb-2">
+                  <div className="flex items-center gap-2">
+                    {analysisResult?.label === 'good' || analysisResult?.label === 'normal' ? (
+                      <CheckCircle className="w-5 h-5 text-emerald-400" />
+                    ) : (
+                      <AlertTriangle className="w-5 h-5 text-red-400" />
+                    )}
+                    <h4 className="font-bold text-white">
+                      {translateLabel(analysisResult?.label || '')}
+                    </h4>
+                  </div>
+                  <span className="text-xs text-slate-400 font-mono">
+                    {analysisResult?.confidence ? `${(analysisResult.confidence * 100).toFixed(1)}%` : '--'}
+                  </span>
+                </div>
+                <p className="text-sm text-slate-400">
+                  {lang === 'vi' ? 'Kết quả phân tích khung hình từ camera trực tiếp.' : 'Analysis result from the live camera frame.'}
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Quick Actions / Controls */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <button className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold py-3 rounded-xl transition-all shadow-lg shadow-blue-900/20">
-              <Activity className="w-5 h-5" /> {t.startInspection}
+            <button
+              onClick={handleToggleCamera}
+              className={`flex items-center justify-center gap-2 text-white font-semibold py-3 rounded-xl transition-all shadow-lg ${
+                cameraEnabled
+                  ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-900/20'
+                  : 'bg-blue-600 hover:bg-blue-500 shadow-blue-900/20'
+              }`}
+            >
+              <Camera className="w-5 h-5" /> {cameraEnabled ? (lang === 'vi' ? 'Tắt camera' : 'Turn off camera') : (lang === 'vi' ? 'Bật camera' : 'Turn on camera')}
             </button>
             <button className="flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold py-3 rounded-xl border border-slate-700 transition-all">
               <Clock className="w-5 h-5" /> {t.pauseTracking}

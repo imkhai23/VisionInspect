@@ -1,39 +1,24 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { predictApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 import {
   Upload, Search, CheckCircle2, AlertTriangle,
   Loader2, X, Shield, Clock, BarChart3,
-  ImagePlus, Sparkles, Camera, RefreshCw, ZoomIn, ZoomOut, Maximize, Activity
+  ImagePlus, Sparkles
 } from 'lucide-react';
-
-type Mode = 'upload' | 'camera' | 'stream';
 
 export default function InspectPage() {
   const { t, lang } = useLanguage();
-  const [mode, setMode] = useState<Mode>('upload');
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [dragOver, setDragOver] = useState(false);
-  const [zoom, setZoom] = useState(1);
-
-  // Camera states
-  const [cameraActive, setCameraActive] = useState(false);
-  const [cameraError, setCameraError] = useState<string | null>(null);
-  const [captured, setCaptured] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const streamImgRef = useRef<HTMLImageElement>(null);
-
-  const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
   const translateLabel = (label: string) => {
     if (!label) return '';
@@ -47,127 +32,6 @@ export default function InspectPage() {
   };
 
   const isGood = result?.label === 'normal' || result?.label === 'good';
-
-  // ── Camera helpers ────────────────────────────────────────────────────────
-  const startCamera = useCallback(async () => {
-    setCameraError(null);
-
-    // Check for Secure Context
-    if (!window.isSecureContext) {
-      setCameraError(lang === 'vi' 
-        ? 'Lỗi: Camera chỉ hoạt động trên kết nối bảo mật (HTTPS hoặc localhost).' 
-        : 'Error: Camera only works on secure connections (HTTPS or localhost).');
-      return;
-    }
-
-    try {
-      let stream;
-      try {
-        // Try with ideal constraints first
-        stream = await navigator.mediaDevices.getUserMedia({ 
-          video: { 
-            facingMode: 'environment', 
-            width: { ideal: 1280 }, 
-            height: { ideal: 720 } 
-          }, 
-          audio: false 
-        });
-      } catch (e) {
-        // Fallback to basic video
-        console.warn("Camera ideal constraints failed, falling back to basic", e);
-        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-      }
-
-      streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.play();
-      }
-      setCameraActive(true);
-      setCaptured(null);
-    } catch (err: any) {
-      console.error("Camera access error details:", err);
-      
-      let msg = lang === 'vi' 
-        ? 'Không thể truy cập camera. Vui lòng cấp quyền trong trình duyệt.' 
-        : 'Cannot access camera. Please allow permission.';
-
-      if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
-        msg = lang === 'vi'
-          ? 'Camera đang bị ứng dụng khác sử dụng (có thể là Backend Server). Vui lòng tắt ứng dụng đang dùng camera và thử lại.'
-          : 'Camera is already in use by another app (likely the Backend Server). Please close it and try again.';
-      } else if (err.name === 'NotAllowedError') {
-        msg = lang === 'vi'
-          ? 'Bạn đã chặn quyền truy cập camera. Vui lòng mở cài đặt trình duyệt để cho phép.'
-          : 'Camera access denied. Please enable it in browser settings.';
-      }
-
-      setCameraError(msg);
-    }
-  }, [lang]);
-
-  const stopCamera = useCallback(() => {
-    streamRef.current?.getTracks().forEach(t => t.stop());
-    streamRef.current = null;
-    setCameraActive(false);
-  }, []);
-
-  const capturePhoto = () => {
-    if (!videoRef.current || !canvasRef.current) return;
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    canvas.getContext('2d')!.drawImage(video, 0, 0);
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
-    setCaptured(dataUrl);
-    stopCamera();
-
-    // Convert to File
-    canvas.toBlob(blob => {
-      if (blob) {
-        const f = new File([blob], `camera_${Date.now()}.jpg`, { type: 'image/jpeg' });
-        setFile(f);
-        setPreview(dataUrl);
-        setResult(null);
-      }
-    }, 'image/jpeg', 0.92);
-  };
-
-  const captureFromStream = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch(`${backendUrl}/api/v1/stream/snapshot`);
-      if (!response.ok) throw new Error('Failed to capture snapshot');
-      
-      const blob = await response.blob();
-      const dataUrl = URL.createObjectURL(blob);
-      
-      setCaptured(dataUrl);
-      setPreview(dataUrl);
-      
-      const f = new File([blob], `stream_${Date.now()}.jpg`, { type: 'image/jpeg' });
-      setFile(f);
-      setResult(null);
-      
-      toast.success(lang === 'vi' ? '📸 Đã chụp ảnh từ luồng live!' : '📸 Captured from live stream!');
-    } catch (err) {
-      console.error("Stream capture error:", err);
-      toast.error(lang === 'vi' ? 'Không thể chụp ảnh từ luồng live.' : 'Failed to capture from live stream.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Stop camera when switching mode
-  useEffect(() => {
-    if (mode !== 'camera') stopCamera();
-    else { setCaptured(null); setFile(null); setPreview(null); setResult(null); }
-    if (mode === 'stream') { setCaptured(null); setFile(null); setPreview(null); setResult(null); }
-  }, [mode, stopCamera]);
-
-  // Cleanup on unmount
-  useEffect(() => () => stopCamera(), [stopCamera]);
 
   // ── Upload helpers ────────────────────────────────────────────────────────
   const handleFileChange = (selected: File | null) => {
@@ -195,14 +59,8 @@ export default function InspectPage() {
   };
 
   const handleReset = () => {
-    setFile(null); setPreview(null); setResult(null); setCaptured(null);
-    setZoom(1);
-    if (mode === 'camera') startCamera();
+    setFile(null); setPreview(null); setResult(null);
   };
-
-  const handleZoomIn = () => setZoom(prev => Math.min(prev + 0.25, 4));
-  const handleZoomOut = () => setZoom(prev => Math.max(prev - 0.25, 1));
-  const handleResetZoom = () => setZoom(1);
 
   return (
     <div className="space-y-8">
@@ -217,27 +75,6 @@ export default function InspectPage() {
             <p className="text-slate-500 font-medium text-sm mt-0.5">{t.aiSurfaceDetection}</p>
           </div>
         </div>
-
-        {/* Mode tabs */}
-        <div className="flex items-center gap-1 p-1 bg-white/5 border border-white/10 rounded-2xl">
-          {([
-            { key: 'upload', icon: <Upload size={16} />, label: t.uploadMode },
-            { key: 'camera', icon: <Camera size={16} />, label: t.cameraMode },
-            { key: 'stream', icon: <Activity size={16} />, label: t.streamMode },
-          ] as const).map(tab => (
-            <button
-              key={tab.key}
-              onClick={() => setMode(tab.key)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 ${
-                mode === tab.key
-                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              {(tab as any).icon} {tab.label}
-            </button>
-          ))}
-        </div>
       </div>
 
       <div className="grid lg:grid-cols-2 gap-8 items-start">
@@ -245,218 +82,53 @@ export default function InspectPage() {
         {/* ── LEFT PANEL ── */}
         <div className="space-y-4">
 
-          {/* ── UPLOAD MODE ── */}
-          {mode === 'upload' && (
-            <>
-              <div
-                onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-                onDragLeave={() => setDragOver(false)}
-                onDrop={handleDrop}
-                className={`relative rounded-3xl overflow-hidden border-2 transition-all duration-300 cursor-pointer group
-                  ${dragOver ? 'border-indigo-500 bg-indigo-500/10' : 'border-white/10 bg-white/[0.02]'}
-                  ${preview ? 'aspect-square' : 'aspect-[4/3]'}
-                `}
-                onClick={() => !preview && fileInputRef.current?.click()}
-              >
-                {preview ? (
-                  <>
-                    <img src={preview} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="Preview" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                    <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between">
-                      <div className="flex items-center gap-2 px-3 py-1.5 bg-black/60 backdrop-blur-md rounded-full">
-                        <ImagePlus size={12} className="text-indigo-400" />
-                        <span className="text-[11px] font-bold text-white truncate max-w-[150px]">{file?.name}</span>
-                      </div>
-                      <button onClick={(e) => { e.stopPropagation(); handleReset(); }} className="p-2 bg-black/60 backdrop-blur-md rounded-full text-white hover:bg-red-500/80 transition-all">
-                        <X size={14} />
-                      </button>
-                    </div>
-                  </>
-                ) : (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center p-10 text-center">
-                    <div className="relative mb-6">
-                      <div className="absolute inset-0 w-24 h-24 rounded-full bg-indigo-500/20 animate-ping opacity-30" />
-                      <div className="w-24 h-24 rounded-full bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center group-hover:bg-indigo-500/20 transition-all duration-500">
-                        <Upload size={36} className="text-indigo-400" />
-                      </div>
-                    </div>
-                    <h3 className="text-xl font-bold text-white mb-1">📁 {lang === 'vi' ? 'Tải ảnh lên để bắt đầu' : 'Upload image to start'}</h3>
-                    <p className="text-slate-500 text-sm mb-1">{lang === 'vi' ? 'Kéo & thả ảnh vào đây' : 'Drag & drop image here'}</p>
-                    <p className="text-slate-600 text-xs mb-5">{lang === 'vi' ? 'hoặc' : 'or'}</p>
-                    <button onClick={() => fileInputRef.current?.click()} className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold rounded-xl transition-all shadow-lg shadow-indigo-500/20">
-                      🖼️ {lang === 'vi' ? 'Chọn ảnh từ máy tính' : 'Browse from computer'}
-                    </button>
-                    <p className="text-slate-700 text-[11px] mt-4">JPG, PNG, WEBP • {lang === 'vi' ? 'Tối đa 10MB' : 'Max 10MB'}</p>
+          <div
+            onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={handleDrop}
+            className={`relative rounded-3xl overflow-hidden border-2 transition-all duration-300 cursor-pointer group
+              ${dragOver ? 'border-indigo-500 bg-indigo-500/10' : 'border-white/10 bg-white/[0.02]'}
+              ${preview ? 'aspect-square' : 'aspect-[4/3]'}
+            `}
+            onClick={() => !preview && fileInputRef.current?.click()}
+          >
+            {preview ? (
+              <>
+                <img src={preview} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="Preview" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between">
+                  <div className="flex items-center gap-2 px-3 py-1.5 bg-black/60 backdrop-blur-md rounded-full">
+                    <ImagePlus size={12} className="text-indigo-400" />
+                    <span className="text-[11px] font-bold text-white truncate max-w-[150px]">{file?.name}</span>
                   </div>
-                )}
-                <input type="file" ref={fileInputRef} onChange={(e) => handleFileChange(e.target.files?.[0] || null)} hidden accept="image/*" />
-              </div>
-            </>
-          )}
-
-          {/* ── CAMERA MODE ── */}
-          {mode === 'camera' && (
-            <div className="space-y-4">
-              <div className="relative rounded-3xl overflow-hidden border-2 border-white/10 bg-black aspect-video flex items-center justify-center">
-                {/* Error */}
-                {cameraError && (
-                  <div className="text-center p-8">
-                    <Camera size={48} className="text-slate-700 mx-auto mb-3" />
-                    <p className="text-red-400 text-sm font-bold">{cameraError}</p>
-                    <button onClick={startCamera} className="mt-4 px-4 py-2 bg-indigo-600 text-white text-sm font-bold rounded-xl">
-                      {lang === 'vi' ? 'Thử lại' : 'Try again'}
-                    </button>
+                  <button onClick={(e) => { e.stopPropagation(); handleReset(); }} className="p-2 bg-black/60 backdrop-blur-md rounded-full text-white hover:bg-red-500/80 transition-all">
+                    <X size={14} />
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="absolute inset-0 flex flex-col items-center justify-center p-10 text-center">
+                <div className="relative mb-6">
+                  <div className="absolute inset-0 w-24 h-24 rounded-full bg-indigo-500/20 animate-ping opacity-30" />
+                  <div className="w-24 h-24 rounded-full bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center group-hover:bg-indigo-500/20 transition-all duration-500">
+                    <Upload size={36} className="text-indigo-400" />
                   </div>
-                )}
-
-                {/* Captured photo */}
-                {captured && !cameraActive && (
-                  <>
-                    <img src={captured} className="w-full h-full object-cover" alt="Captured" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                    <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between">
-                      <span className="px-3 py-1 bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-xs font-bold rounded-full">
-                        ✅ {lang === 'vi' ? 'Đã chụp' : 'Captured'}
-                      </span>
-                      <button onClick={handleReset} className="flex items-center gap-1.5 px-3 py-1.5 bg-black/60 backdrop-blur-md rounded-full text-white text-xs font-bold hover:bg-indigo-500 transition-all">
-                        <RefreshCw size={12} /> {lang === 'vi' ? 'Chụp lại' : 'Retake'}
-                      </button>
-                    </div>
-                  </>
-                )}
-
-                {/* Live camera feed */}
-                {!captured && !cameraError && (
-                  <>
-                    <div 
-                      className="w-full h-full transition-transform duration-300 ease-out origin-center"
-                      style={{ transform: `scale(${zoom})` }}
-                    >
-                      <video ref={videoRef} className={`w-full h-full object-cover ${cameraActive ? '' : 'hidden'}`} muted playsInline />
-                    </div>
-
-                    {/* Zoom Controls */}
-                    {cameraActive && (
-                      <div className="absolute top-4 left-4 flex flex-col gap-2 z-20">
-                        <button onClick={handleZoomIn} className="p-2 bg-black/60 hover:bg-indigo-600 text-white rounded-lg backdrop-blur-md border border-white/10 transition-colors shadow-lg" title="Zoom In"><ZoomIn size={18} /></button>
-                        <button onClick={handleZoomOut} className="p-2 bg-black/60 hover:bg-indigo-600 text-white rounded-lg backdrop-blur-md border border-white/10 transition-colors shadow-lg" title="Zoom Out"><ZoomOut size={18} /></button>
-                        <button onClick={handleResetZoom} className="p-2 bg-black/60 hover:bg-indigo-600 text-white rounded-lg backdrop-blur-md border border-white/10 transition-colors shadow-lg" title="Reset Zoom"><Maximize size={18} /></button>
-                      </div>
-                    )}
-
-                    {/* Viewfinder overlay */}
-                    {cameraActive && (
-                      <div className="absolute inset-0 pointer-events-none">
-                        <div className="absolute inset-6 border-2 border-white/20 rounded-2xl">
-                          <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-indigo-400 rounded-tl-xl" />
-                          <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-indigo-400 rounded-tr-xl" />
-                          <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-indigo-400 rounded-bl-xl" />
-                          <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-indigo-400 rounded-br-xl" />
-                        </div>
-                        <div className="absolute top-3 left-3 flex items-center gap-1.5 px-2 py-1 bg-red-500/80 rounded-full">
-                          <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
-                          <span className="text-[10px] font-bold text-white">LIVE</span>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Start camera prompt */}
-                    {!cameraActive && !cameraError && (
-                      <div className="flex flex-col items-center gap-4 text-center p-8">
-                        <div className="w-20 h-20 rounded-full bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center">
-                          <Camera size={36} className="text-indigo-400" />
-                        </div>
-                        <div>
-                          <h3 className="text-lg font-bold text-white mb-1">{lang === 'vi' ? 'Chụp ảnh trực tiếp' : 'Take a live photo'}</h3>
-                          <p className="text-slate-500 text-sm">{lang === 'vi' ? 'Nhấn bên dưới để bật camera' : 'Click below to turn on camera'}</p>
-                        </div>
-                        <button onClick={startCamera} className="flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-2xl transition-all shadow-lg shadow-indigo-500/20">
-                          <Camera size={18} /> {lang === 'vi' ? '📷 Bật Camera' : '📷 Turn On Camera'}
-                        </button>
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-              <canvas ref={canvasRef} className="hidden" />
-
-              {/* Capture button */}
-              {cameraActive && (
-                <button
-                  onClick={capturePhoto}
-                  className="w-full py-4 rounded-2xl font-bold text-white text-lg transition-all flex items-center justify-center gap-3"
-                  style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}
-                >
-                  <Camera size={22} />
-                  📸 {t.takePhotoNow}
+                </div>
+                <h3 className="text-xl font-bold text-white mb-1">📁 {lang === 'vi' ? 'Tải ảnh lên để bắt đầu' : 'Upload image to start'}</h3>
+                <p className="text-slate-500 text-sm mb-1">{lang === 'vi' ? 'Kéo & thả ảnh vào đây' : 'Drag & drop image here'}</p>
+                <p className="text-slate-600 text-xs mb-5">{lang === 'vi' ? 'hoặc' : 'or'}</p>
+                <button onClick={() => fileInputRef.current?.click()} className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold rounded-xl transition-all shadow-lg shadow-indigo-500/20">
+                  🖼️ {lang === 'vi' ? 'Chọn ảnh từ máy tính' : 'Browse from computer'}
                 </button>
-              )}
-            </div>
-          )}
-
-          {/* ── STREAM MODE ── */}
-          {mode === 'stream' && (
-            <div className="space-y-4">
-              <div className="relative rounded-3xl overflow-hidden border-2 border-white/10 bg-black aspect-video flex items-center justify-center">
-                {!captured ? (
-                  <>
-                    <div 
-                      className="w-full h-full transition-transform duration-300 ease-out origin-center"
-                      style={{ transform: `scale(${zoom})` }}
-                    >
-                      <img 
-                        ref={streamImgRef}
-                        src={`${backendUrl}/api/v1/stream/video_feed`} 
-                        className="w-full h-full object-cover" 
-                        alt="Live Stream"
-                        crossOrigin="anonymous"
-                      />
-                    </div>
-
-                    {/* Zoom Controls */}
-                    <div className="absolute top-4 left-4 flex flex-col gap-2 z-20">
-                      <button onClick={handleZoomIn} className="p-2 bg-black/60 hover:bg-indigo-600 text-white rounded-lg backdrop-blur-md border border-white/10 transition-colors shadow-lg" title="Zoom In"><ZoomIn size={18} /></button>
-                      <button onClick={handleZoomOut} className="p-2 bg-black/60 hover:bg-indigo-600 text-white rounded-lg backdrop-blur-md border border-white/10 transition-colors shadow-lg" title="Zoom Out"><ZoomOut size={18} /></button>
-                      <button onClick={handleResetZoom} className="p-2 bg-black/60 hover:bg-indigo-600 text-white rounded-lg backdrop-blur-md border border-white/10 transition-colors shadow-lg" title="Reset Zoom"><Maximize size={18} /></button>
-                    </div>
-
-                    <div className="absolute top-3 left-3 flex items-center gap-1.5 px-2 py-1 bg-indigo-500/80 rounded-full">
-                      <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
-                      <span className="text-[10px] font-bold text-white uppercase">{t.streamMode}</span>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <img src={captured} className="w-full h-full object-cover" alt="Captured" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                    <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between">
-                      <span className="px-3 py-1 bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-xs font-bold rounded-full">
-                        ✅ {t.frameCaptured}
-                      </span>
-                      <button onClick={handleReset} className="flex items-center gap-1.5 px-3 py-1.5 bg-black/60 backdrop-blur-md rounded-full text-white text-xs font-bold hover:bg-indigo-500 transition-all">
-                        <RefreshCw size={12} /> {t.retakeBtn}
-                      </button>
-                    </div>
-                  </>
-                )}
+                <p className="text-slate-700 text-[11px] mt-4">JPG, PNG, WEBP • {lang === 'vi' ? 'Tối đa 10MB' : 'Max 10MB'}</p>
               </div>
-
-              {!captured && (
-                <button
-                  onClick={captureFromStream}
-                  className="w-full py-4 rounded-2xl font-bold text-white text-lg transition-all flex items-center justify-center gap-3"
-                  style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}
-                >
-                  <Camera size={22} />
-                  📸 {t.captureFromStream}
-                </button>
-              )}
-            </div>
-          )}
+            )}
+            <input type="file" ref={fileInputRef} onChange={(e) => handleFileChange(e.target.files?.[0] || null)} hidden accept="image/*" />
+          </div>
 
           {/* ── Analyze button (shared) ── */}
 
-          {(preview || captured) && (
+          {preview && (
             <button
               onClick={handleUpload}
               disabled={!file || loading}
@@ -485,12 +157,12 @@ export default function InspectPage() {
                 {lang === 'vi' ? 'Kết quả phân tích AI sẽ hiện ở đây' : 'AI analysis results will appear here'}
               </h3>
               <p className="text-slate-600 text-sm max-w-xs mx-auto mb-6">
-                {lang === 'vi' ? 'Tải ảnh lên hoặc chụp ảnh bằng camera, rồi nhấn Bắt đầu Kiểm tra.' : 'Upload or capture an image, then click Start Inspection.'}
+                {lang === 'vi' ? 'Tải ảnh lên rồi nhấn Bắt đầu Kiểm tra.' : 'Upload an image, then click Start Inspection.'}
               </p>
               <div className="text-left space-y-3 max-w-xs mx-auto">
                 {[
-                  { step: '1', text: lang === 'vi' ? 'Chọn chế độ Upload hoặc Camera' : 'Select Upload or Camera mode' },
-                  { step: '2', text: lang === 'vi' ? 'Tải lên hoặc chụp ảnh sản phẩm' : 'Upload or take a product photo' },
+                  { step: '1', text: lang === 'vi' ? 'Chọn một ảnh sản phẩm' : 'Choose a product image' },
+                  { step: '2', text: lang === 'vi' ? 'Tải ảnh lên từ máy tính' : 'Upload the image from your computer' },
                   { step: '3', text: lang === 'vi' ? 'Nhấn "Bắt đầu Kiểm tra"' : 'Press "Start Inspection"' },
                 ].map(({ step, text }) => (
                   <div key={step} className="flex items-center gap-3">

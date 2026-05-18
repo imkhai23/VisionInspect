@@ -53,7 +53,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     fetchUser();
   }, [router]);
 
-  const NAV_ITEMS = [
+  const NAV_ITEMS: { href: string; icon: any; label: string }[] = [
     { href: '/dashboard', icon: LayoutDashboard, label: t.dashboard },
     { href: '/dashboard/realtime', icon: Activity, label: t.realtimeMonitor },
     { href: '/dashboard/inspect', icon: Search, label: t.inspectImage },

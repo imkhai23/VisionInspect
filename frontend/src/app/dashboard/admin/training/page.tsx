@@ -150,29 +150,53 @@ export default function TrainingPage() {
         <div className="space-y-6">
           <div className="premium-card p-6 space-y-4">
             <div className="flex items-center gap-2 text-slate-500 text-xs font-black uppercase tracking-[0.2em]"><Play size={14} /> {t.startTrainingLabel}</div>
-            <select value={form.dataset_id} onChange={(e) => setForm((current) => ({ ...current, dataset_id: e.target.value }))} className="w-full rounded-2xl bg-white/5 border border-white/10 px-4 py-3 text-white">
-              <option value="">{t.selectDataset}</option>
-              {datasets.map((dataset) => <option key={dataset.id} value={dataset.id}>{dataset.name}</option>)}
-            </select>
-            <div className="grid grid-cols-2 gap-3">
-              <select value={form.model_type} onChange={(e) => setForm((current) => ({ ...current, model_type: e.target.value }))} className="rounded-2xl bg-white/5 border border-white/10 px-4 py-3 text-white">
-                <option value="yolov8n">YOLOv8n</option>
-                <option value="yolov8s">YOLOv8s</option>
-                <option value="yolov8m">YOLOv8m</option>
-              </select>
-              <select value={form.optimizer} onChange={(e) => setForm((current) => ({ ...current, optimizer: e.target.value }))} className="rounded-2xl bg-white/5 border border-white/10 px-4 py-3 text-white">
-                <option value="AdamW">AdamW</option>
-                <option value="SGD">SGD</option>
-                <option value="Adam">Adam</option>
+            <div>
+              <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Bộ dữ liệu (Dataset)</label>
+              <select value={form.dataset_id} onChange={(e) => setForm((current) => ({ ...current, dataset_id: e.target.value }))} className="w-full rounded-2xl bg-white/5 border border-white/10 px-4 py-3 text-white focus:border-indigo-500/50 transition-all outline-none">
+                <option value="">{t.selectDataset}</option>
+                {datasets.map((dataset) => <option key={dataset.id} value={dataset.id}>{dataset.name}</option>)}
               </select>
             </div>
+            
             <div className="grid grid-cols-2 gap-3">
-              <input type="number" className="rounded-2xl bg-white/5 border border-white/10 px-4 py-3 text-white" value={form.epochs} onChange={(e) => setForm((current) => ({ ...current, epochs: Number(e.target.value) }))} placeholder="Epochs" />
-              <input type="number" className="rounded-2xl bg-white/5 border border-white/10 px-4 py-3 text-white" value={form.batch_size} onChange={(e) => setForm((current) => ({ ...current, batch_size: Number(e.target.value) }))} placeholder="Batch size" />
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Mô hình (Model)</label>
+                <select value={form.model_type} onChange={(e) => setForm((current) => ({ ...current, model_type: e.target.value }))} className="w-full rounded-2xl bg-white/5 border border-white/10 px-4 py-3 text-white focus:border-indigo-500/50 transition-all outline-none">
+                  <option value="yolov8n">YOLOv8n (Siêu nhẹ)</option>
+                  <option value="yolov8s">YOLOv8s (Trung bình)</option>
+                  <option value="yolov8m">YOLOv8m (Chính xác cao)</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Bộ tối ưu (Optimizer)</label>
+                <select value={form.optimizer} onChange={(e) => setForm((current) => ({ ...current, optimizer: e.target.value }))} className="w-full rounded-2xl bg-white/5 border border-white/10 px-4 py-3 text-white focus:border-indigo-500/50 transition-all outline-none">
+                  <option value="AdamW">AdamW (Mặc định)</option>
+                  <option value="SGD">SGD</option>
+                  <option value="Adam">Adam</option>
+                </select>
+              </div>
             </div>
+            
             <div className="grid grid-cols-2 gap-3">
-              <input type="number" className="rounded-2xl bg-white/5 border border-white/10 px-4 py-3 text-white" value={form.image_size} onChange={(e) => setForm((current) => ({ ...current, image_size: Number(e.target.value) }))} placeholder="Image size" />
-              <input type="number" step="0.0001" className="rounded-2xl bg-white/5 border border-white/10 px-4 py-3 text-white" value={form.learning_rate} onChange={(e) => setForm((current) => ({ ...current, learning_rate: Number(e.target.value) }))} placeholder="Learning rate" />
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Chu kỳ (Epochs)</label>
+                <input type="number" className="w-full rounded-2xl bg-white/5 border border-white/10 px-4 py-3 text-white focus:border-indigo-500/50 transition-all outline-none" value={form.epochs} onChange={(e) => setForm((current) => ({ ...current, epochs: Number(e.target.value) }))} placeholder="Ví dụ: 3, 5, 100" />
+              </div>
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Kích cỡ lô (Batch Size)</label>
+                <input type="number" className="w-full rounded-2xl bg-white/5 border border-white/10 px-4 py-3 text-white focus:border-indigo-500/50 transition-all outline-none" value={form.batch_size} onChange={(e) => setForm((current) => ({ ...current, batch_size: Number(e.target.value) }))} placeholder="Khuyên dùng: 8 hoặc 16" />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Kích cỡ ảnh (Image Size)</label>
+                <input type="number" className="w-full rounded-2xl bg-white/5 border border-white/10 px-4 py-3 text-white focus:border-indigo-500/50 transition-all outline-none" value={form.image_size} onChange={(e) => setForm((current) => ({ ...current, image_size: Number(e.target.value) }))} placeholder="Mặc định: 640" />
+              </div>
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Tốc độ học (Learning Rate)</label>
+                <input type="number" step="0.0001" className="w-full rounded-2xl bg-white/5 border border-white/10 px-4 py-3 text-white focus:border-indigo-500/50 transition-all outline-none" value={form.learning_rate} onChange={(e) => setForm((current) => ({ ...current, learning_rate: Number(e.target.value) }))} placeholder="Mặc định: 0.001" />
+              </div>
             </div>
             <button onClick={startTraining} className="w-full rounded-2xl py-3 font-black text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 transition-all shadow-lg shadow-indigo-500/20">
               {t.startTrainingLabel}

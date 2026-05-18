@@ -98,6 +98,7 @@ export const datasetApi = {
   remove: (datasetId: string) => api.delete(`/admin/training/datasets/${datasetId}`),
   stats: (datasetId: string) => api.get(`/admin/training/datasets/${datasetId}/stats`),
   assets: (datasetId: string) => api.get(`/admin/training/datasets/${datasetId}/assets`),
+  deleteAsset: (datasetId: string, assetId: string) => api.delete(`/admin/training/datasets/${datasetId}/assets/${assetId}`),
   upload: (datasetId: string, formData: FormData) =>
     api.post(`/admin/training/datasets/${datasetId}/upload`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
@@ -120,5 +121,5 @@ export const trainingApi = {
     api.post(`/admin/training/models/${modelVersionId}/deploy`, data),
   rollbackModel: (modelVersionId: string) => api.post(`/admin/training/models/${modelVersionId}/rollback`),
   removeModel: (modelVersionId: string) => api.delete(`/admin/training/models/${modelVersionId}`),
-  trainingWsUrl: (jobId: string) => `${API_URL.replace(/^http/, 'ws')}/admin/training/training-jobs/${jobId}/ws`,
+  trainingWsUrl: (jobId: string) => `${API_URL.replace(/^http/, 'ws')}/admin/training/training-jobs/${jobId}/ws?token=${tokenStorage.get() || ''}`,
 };

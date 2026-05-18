@@ -34,6 +34,7 @@ export default function DatasetManagerPage() {
   const [split, setSplit] = useState<'train' | 'val' | 'test'>('train');
   const [assetType, setAssetType] = useState<'image' | 'label' | 'zip'>('image');
   const [files, setFiles] = useState<File[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const [form, setForm] = useState({
     name: '',
@@ -186,6 +187,28 @@ export default function DatasetManagerPage() {
     }
   };
 
+  const removeAssetFile = async (assetId: string) => {
+    if (!selectedDataset) return;
+    if (!window.confirm(t.deleteAssetConfirm)) return;
+    try {
+      await datasetApi.deleteAsset(selectedDataset.id, assetId);
+      toast.success(t.assetDeleted);
+      fetchDatasets();
+      fetchSelectedDetails(selectedDataset.id);
+    } catch (error) {
+      toast.error(t.deleteAssetFailed);
+    }
+  };
+
+  const getAssetImageUrl = (previewUrl: string | null) => {
+    if (!previewUrl) return '';
+    if (previewUrl.startsWith('http://') || previewUrl.startsWith('https://')) {
+      return previewUrl;
+    }
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    return `${backendUrl}${previewUrl}`;
+  };
+
   return (
     <div className="space-y-8">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -306,17 +329,55 @@ export default function DatasetManagerPage() {
                   <h2 className="text-lg font-black text-white">{t.assetPreview}</h2>
                   <p className="text-sm text-slate-500">{selectedDataset?.slug || t.noDatasetSelected}</p>
                 </div>
-                <div className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">{selectedAssets.length} files</div>
+                <div className="flex items-center gap-3">
+                  <div className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">{selectedAssets.length} files</div>
+                  {selectedAssets.length > 0 && (
+                    <button
+                      onClick={() => setIsModalOpen(true)}
+                      className="px-3 py-1.5 rounded-xl bg-indigo-600/10 hover:bg-indigo-600/20 border border-indigo-500/20 text-[10px] font-black text-indigo-400 hover:text-white uppercase tracking-wider transition-all"
+                    >
+                      {t.viewAll}
+                    </button>
+                  )}
+                </div>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4 max-h-[540px] overflow-auto pr-2">
                 {selectedAssets.map((asset) => (
-                  <div key={asset.id} className="rounded-2xl border border-white/10 bg-white/5 overflow-hidden">
-                    <div className="aspect-square bg-slate-900 flex items-center justify-center">
-                      {asset.preview_url ? <img src={asset.preview_url} className="w-full h-full object-cover" alt={asset.file_name} /> : <Layers3 className="text-slate-700" />}
+                  <div key={asset.id} className="relative group rounded-2xl border border-white/10 bg-white/5 overflow-hidden transition-all duration-300 hover:border-indigo-500/30">
+                    <div className="aspect-square bg-slate-900 flex items-center justify-center relative">
+                      {asset.preview_url ? (
+                        <img src={getAssetImageUrl(asset.preview_url)} className="w-full h-full object-cover" alt={asset.file_name} />
+                      ) : (
+                        <Layers3 className="text-slate-700" size={36} />
+                      )}
+                      
+                      {/* Premium Hover Delete Button */}
+                      <button
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          removeAssetFile(asset.id);
+                        }}
+                        className="absolute top-2 right-2 p-2 rounded-xl bg-red-500/80 hover:bg-red-500 text-white opacity-0 group-hover:opacity-100 transition-all duration-200 transform scale-90 group-hover:scale-100 shadow-lg shadow-black/40 backdrop-blur-sm"
+                        title={t.delete || 'Xóa'}
+                      >
+                        <Trash2 size={14} />
+                      </button>
                     </div>
-                    <div className="p-3">
-                      <div className="text-xs font-bold text-white truncate">{asset.file_name}</div>
-                      <div className="text-[10px] text-slate-500 mt-1 uppercase tracking-[0.2em]">{asset.split} · {asset.asset_type}</div>
+                    
+                    <div className="p-3 bg-slate-950/40 backdrop-blur-md border-t border-white/5">
+                      <div className="text-xs font-bold text-white truncate" title={asset.file_name}>{asset.file_name}</div>
+                      <div className="flex items-center justify-between mt-1.5">
+                        <div className="text-[9px] text-slate-400 font-bold uppercase tracking-wider bg-white/5 px-2 py-0.5 rounded-md border border-white/5">
+                          {asset.split}
+                        </div>
+                        <div className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border ${
+                          asset.asset_type === 'image' 
+                            ? 'text-cyan-400 bg-cyan-400/5 border-cyan-400/10' 
+                            : 'text-indigo-400 bg-indigo-400/5 border-indigo-400/10'
+                        }`}>
+                          {asset.asset_type}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -340,6 +401,74 @@ export default function DatasetManagerPage() {
           </div>
         </div>
       </div>
+
+      {/* Fullscreen View All Assets Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md transition-all duration-300">
+          <div className="relative w-full max-w-5xl h-[85vh] bg-slate-900 border border-white/10 rounded-3xl overflow-hidden flex flex-col shadow-2xl shadow-black/80 animate-in fade-in zoom-in-95 duration-200">
+            {/* Modal Header */}
+            <div className="px-6 py-5 border-b border-white/5 flex items-center justify-between bg-slate-950/20">
+              <div>
+                <h3 className="text-xl font-black text-white flex items-center gap-2">
+                  <Database size={20} className="text-indigo-400" />
+                  {t.allAssets || 'Tất cả tệp tin'} · <span className="text-slate-400 font-medium">{selectedDataset?.name}</span>
+                </h3>
+                <p className="text-xs text-slate-500 mt-1">Tổng cộng {selectedAssets.length} tệp tin trong bộ dữ liệu</p>
+              </div>
+              <button 
+                onClick={() => setIsModalOpen(false)}
+                className="px-4 py-2.5 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-black text-white transition-all duration-200 shadow-md shadow-black/20"
+              >
+                Đóng
+              </button>
+            </div>
+            
+            {/* Modal Body */}
+            <div className="flex-1 p-6 overflow-y-auto bg-slate-950/10">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                {selectedAssets.map((asset) => (
+                  <div key={asset.id} className="relative group rounded-2xl border border-white/10 bg-white/5 overflow-hidden transition-all duration-300 hover:border-indigo-500/30">
+                    <div className="aspect-square bg-slate-950 flex items-center justify-center relative">
+                      {asset.preview_url ? (
+                        <img src={getAssetImageUrl(asset.preview_url)} className="w-full h-full object-cover" alt={asset.file_name} />
+                      ) : (
+                        <Layers3 className="text-slate-700" size={32} />
+                      )}
+                      
+                      <button
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          removeAssetFile(asset.id);
+                        }}
+                        className="absolute top-2 right-2 p-2 rounded-xl bg-red-500/80 hover:bg-red-500 text-white opacity-0 group-hover:opacity-100 transition-all duration-200 transform scale-90 group-hover:scale-100 shadow-lg shadow-black/40 backdrop-blur-sm"
+                        title={t.delete || 'Xóa'}
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
+                    
+                    <div className="p-3 bg-slate-950/40 backdrop-blur-md border-t border-white/5">
+                      <div className="text-[11px] font-bold text-white truncate" title={asset.file_name}>{asset.file_name}</div>
+                      <div className="flex items-center justify-between mt-2">
+                        <span className="text-[8px] text-slate-400 font-bold uppercase tracking-wider bg-white/5 px-1.5 py-0.5 rounded border border-white/5">
+                          {asset.split}
+                        </span>
+                        <span className={`text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border ${
+                          asset.asset_type === 'image' 
+                            ? 'text-cyan-400 bg-cyan-400/5 border-cyan-400/10' 
+                            : 'text-indigo-400 bg-indigo-400/5 border-indigo-400/10'
+                        }`}>
+                          {asset.asset_type}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

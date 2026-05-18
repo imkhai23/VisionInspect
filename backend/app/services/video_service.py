@@ -9,10 +9,17 @@ import threading
 import queue
 import asyncio
 import os
+import sys
 from collections import deque
 from typing import Dict, List, Any, Optional
-from ai.vision_engine import VisionEngine
 from app.services.alert_service import get_alert_service
+from app.config import get_settings
+
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
+if PROJECT_ROOT not in sys.path:
+    sys.path.append(PROJECT_ROOT)
+
+from ai.vision_engine import VisionEngine
 
 
 class VideoProcessor:

@@ -93,8 +93,12 @@ app.add_middleware(
 )
 
 # ── Static Files ──────────────────────────────────────────────────────────────
-os.makedirs("storage/defects", exist_ok=True)
-app.mount("/storage", StaticFiles(directory="storage"), name="storage")
+from pathlib import Path
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+STORAGE_DIR = PROJECT_ROOT / "storage"
+os.makedirs(STORAGE_DIR / "defects", exist_ok=True)
+os.makedirs(STORAGE_DIR / "datasets", exist_ok=True)
+app.mount("/storage", StaticFiles(directory=str(STORAGE_DIR)), name="storage")
 
 # ── Routers ────────────────────────────────────────────────────────────────────
 app.include_router(auth_router)
