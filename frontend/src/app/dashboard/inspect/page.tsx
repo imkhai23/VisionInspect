@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 import {
   Upload, Search, CheckCircle2, AlertTriangle,
   Loader2, X, Shield, Clock, BarChart3,
-  ImagePlus, Sparkles, Camera, RefreshCw, ZoomIn, Activity
+  ImagePlus, Sparkles, Camera, RefreshCw, ZoomIn, ZoomOut, Maximize, Activity
 } from 'lucide-react';
 
 type Mode = 'upload' | 'camera' | 'stream';
@@ -20,6 +20,7 @@ export default function InspectPage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [dragOver, setDragOver] = useState(false);
+  const [zoom, setZoom] = useState(1);
 
   // Camera states
   const [cameraActive, setCameraActive] = useState(false);
@@ -195,8 +196,13 @@ export default function InspectPage() {
 
   const handleReset = () => {
     setFile(null); setPreview(null); setResult(null); setCaptured(null);
+    setZoom(1);
     if (mode === 'camera') startCamera();
   };
+
+  const handleZoomIn = () => setZoom(prev => Math.min(prev + 0.25, 4));
+  const handleZoomOut = () => setZoom(prev => Math.max(prev - 0.25, 1));
+  const handleResetZoom = () => setZoom(1);
 
   return (
     <div className="space-y-8">
@@ -322,7 +328,22 @@ export default function InspectPage() {
                 {/* Live camera feed */}
                 {!captured && !cameraError && (
                   <>
-                    <video ref={videoRef} className={`w-full h-full object-cover ${cameraActive ? '' : 'hidden'}`} muted playsInline />
+                    <div 
+                      className="w-full h-full transition-transform duration-300 ease-out origin-center"
+                      style={{ transform: `scale(${zoom})` }}
+                    >
+                      <video ref={videoRef} className={`w-full h-full object-cover ${cameraActive ? '' : 'hidden'}`} muted playsInline />
+                    </div>
+
+                    {/* Zoom Controls */}
+                    {cameraActive && (
+                      <div className="absolute top-4 left-4 flex flex-col gap-2 z-20">
+                        <button onClick={handleZoomIn} className="p-2 bg-black/60 hover:bg-indigo-600 text-white rounded-lg backdrop-blur-md border border-white/10 transition-colors shadow-lg" title="Zoom In"><ZoomIn size={18} /></button>
+                        <button onClick={handleZoomOut} className="p-2 bg-black/60 hover:bg-indigo-600 text-white rounded-lg backdrop-blur-md border border-white/10 transition-colors shadow-lg" title="Zoom Out"><ZoomOut size={18} /></button>
+                        <button onClick={handleResetZoom} className="p-2 bg-black/60 hover:bg-indigo-600 text-white rounded-lg backdrop-blur-md border border-white/10 transition-colors shadow-lg" title="Reset Zoom"><Maximize size={18} /></button>
+                      </div>
+                    )}
+
                     {/* Viewfinder overlay */}
                     {cameraActive && (
                       <div className="absolute inset-0 pointer-events-none">
@@ -379,13 +400,26 @@ export default function InspectPage() {
               <div className="relative rounded-3xl overflow-hidden border-2 border-white/10 bg-black aspect-video flex items-center justify-center">
                 {!captured ? (
                   <>
-                    <img 
-                      ref={streamImgRef}
-                      src={`${backendUrl}/api/v1/stream/video_feed`} 
-                      className="w-full h-full object-cover" 
-                      alt="Live Stream"
-                      crossOrigin="anonymous"
-                    />
+                    <div 
+                      className="w-full h-full transition-transform duration-300 ease-out origin-center"
+                      style={{ transform: `scale(${zoom})` }}
+                    >
+                      <img 
+                        ref={streamImgRef}
+                        src={`${backendUrl}/api/v1/stream/video_feed`} 
+                        className="w-full h-full object-cover" 
+                        alt="Live Stream"
+                        crossOrigin="anonymous"
+                      />
+                    </div>
+
+                    {/* Zoom Controls */}
+                    <div className="absolute top-4 left-4 flex flex-col gap-2 z-20">
+                      <button onClick={handleZoomIn} className="p-2 bg-black/60 hover:bg-indigo-600 text-white rounded-lg backdrop-blur-md border border-white/10 transition-colors shadow-lg" title="Zoom In"><ZoomIn size={18} /></button>
+                      <button onClick={handleZoomOut} className="p-2 bg-black/60 hover:bg-indigo-600 text-white rounded-lg backdrop-blur-md border border-white/10 transition-colors shadow-lg" title="Zoom Out"><ZoomOut size={18} /></button>
+                      <button onClick={handleResetZoom} className="p-2 bg-black/60 hover:bg-indigo-600 text-white rounded-lg backdrop-blur-md border border-white/10 transition-colors shadow-lg" title="Reset Zoom"><Maximize size={18} /></button>
+                    </div>
+
                     <div className="absolute top-3 left-3 flex items-center gap-1.5 px-2 py-1 bg-indigo-500/80 rounded-full">
                       <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
                       <span className="text-[10px] font-bold text-white uppercase">{lang === 'vi' ? 'Luồng từ AI' : 'AI Stream'}</span>
