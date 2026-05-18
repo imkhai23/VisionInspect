@@ -20,6 +20,7 @@ from app.routers import (
     usage_router,
     admin_router,
     stream_router,
+    training_router,
 )
 
 
@@ -34,14 +35,17 @@ async def lifespan(app: FastAPI):
     """Run startup/shutdown tasks."""
     print(f"[App] {settings.app_name} v{settings.app_version} started")
 
-    # Start Video Processor for real-time AI
-    try:
-        from app.services.video_service import get_video_processor
-        processor = get_video_processor()
-        processor.start()
-        print("[App] Video Processor started")
-    except Exception as e:
-        print(f"[App] Failed to start Video Processor: {e}")
+    # Start Video Processor only when explicitly enabled.
+    if settings.enable_video_processor:
+        try:
+            from app.services.video_service import get_video_processor
+            processor = get_video_processor()
+            processor.start()
+            print("[App] Video Processor started")
+        except Exception as e:
+            print(f"[App] Failed to start Video Processor: {e}")
+    else:
+        print("[App] Video Processor disabled by configuration")
 
     # Warm up the AI model
     try:
@@ -54,12 +58,13 @@ async def lifespan(app: FastAPI):
     yield
 
     # Shutdown
-    try:
-        from app.services.video_service import get_video_processor
-        get_video_processor().stop()
-        print("[App] Video Processor stopped")
-    except:
-        pass
+    if settings.enable_video_processor:
+        try:
+            from app.services.video_service import get_video_processor
+            get_video_processor().stop()
+            print("[App] Video Processor stopped")
+        except:
+            pass
 
     print("[App] Shutting down...")
 
@@ -99,6 +104,7 @@ app.include_router(usage_router)
 app.include_router(stripe_router)
 app.include_router(admin_router)
 app.include_router(stream_router)
+app.include_router(training_router)
 
 
 

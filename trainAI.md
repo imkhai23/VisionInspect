@@ -122,3 +122,40 @@ Sau khi chạy xong, kết quả sẽ nằm trong thư mục `runs/detect/train/
 1. Gán nhãn trên Roboflow -> 2. Tải về format YOLOv8 -> 3. Chạy lệnh `model.train` -> 4. Lấy file `best.pt` dùng cho Dashboard.
 
 *Nếu có chỗ nào bạn vẫn thấy "khựng" lại, hãy chụp màn hình Terminal gửi tôi, tôi sẽ chỉ đích danh bạn cần gõ gì tiếp theo!*
+
+
+ Để lấy Telegram Bot Token và Chat ID nhằm kích hoạt tính năng thông báo lỗi tự động, bạn hãy làm theo các bước cực kỳ
+  đơn giản sau:
+
+  Bước 1: Lấy Telegram Bot Token (Dùng để tạo Bot)
+   1. Mở ứng dụng Telegram và tìm kiếm người dùng: @BotFather.
+   2. Nhấn Start (Bắt đầu) và gửi tin nhắn lệnh: /newbot.
+   3. Làm theo hướng dẫn của nó:
+       * Đặt tên cho Bot: Ví dụ: VisionInspect_Bot.
+       * Đặt Username cho Bot: Phải kết thúc bằng chữ bot (ví dụ: vinspect_01_bot).
+   4. Sau khi xong, @BotFather sẽ gửi cho bạn một đoạn mã dài gọi là API Token.
+       * Ví dụ: 723456789:ABCdefGHIjklMNOpqrsTUV...
+       * Lưu lại mã này.
+
+  Bước 2: Lấy Telegram Chat ID (Dùng để xác định gửi tin nhắn cho ai)
+  Để Bot biết gửi thông báo vào đâu (cho bạn hoặc cho một nhóm), bạn cần lấy ID của cuộc trò chuyện đó:
+   1. Tìm kiếm Bot bạn vừa tạo (theo username) và nhấn Start để bắt đầu chat với nó.
+   2. Gửi một tin nhắn bất kỳ cho Bot (ví dụ: "Hello").
+   3. Tìm kiếm người dùng: @userinfobot trên Telegram.
+   4. Nhấn Start, nó sẽ gửi trả về cho bạn một con số (thường là 9-10 chữ số). Đó chính là ID cá nhân của bạn.
+       * Ví dụ: 123456789
+
+  > Mẹo nếu muốn gửi vào Nhóm: Thêm Bot vào nhóm, sau đó thêm bot @GetIDsBot vào nhóm đó. Nó sẽ hiện ra Chat ID của nhóm
+  (thường có dấu trừ ở trước, ví dụ: -100123456789).
+
+  Bước 3: Cấu hình vào hệ thống
+  Bạn mở file .env trong thư mục backend và dán 2 thông tin vừa lấy được vào:
+
+   1 TELEGRAM_BOT_TOKEN=723456789:ABCdefGHIjklMNOpqrsTUV...
+   2 TELEGRAM_CHAT_ID=123456789
+
+  Bước 4: Kiểm tra
+  Bây giờ, khi bạn khởi chạy hệ thống và AI phát hiện một sản phẩm lỗi (DEFECT), Bot sẽ ngay lập tức gửi ảnh snapshot và
+  tin nhắn báo cáo vào Telegram của bạn!
+
+  Lưu ý: Bot không thể tự nhắn tin cho bạn nếu bạn chưa nhấn Start với nó trước. Đừng quên bước này nhé!¥

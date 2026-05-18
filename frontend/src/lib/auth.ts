@@ -11,6 +11,7 @@ export const tokenStorage = {
   set: (token: string) => {
     Cookies.set(TOKEN_KEY, token, {
       expires: TOKEN_EXPIRY_DAYS,
+      path: '/',
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
     });
@@ -18,7 +19,7 @@ export const tokenStorage = {
 
   get: (): string | undefined => Cookies.get(TOKEN_KEY),
 
-  remove: () => Cookies.remove(TOKEN_KEY),
+  remove: () => Cookies.remove(TOKEN_KEY, { path: '/' }),
 
   isAuthenticated: (): boolean => !!Cookies.get(TOKEN_KEY),
 };

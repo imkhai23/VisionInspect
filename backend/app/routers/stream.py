@@ -16,6 +16,7 @@ router = APIRouter(prefix="/api/v1/stream", tags=["Streaming"])
 async def video_feed():
     """MJPEG video stream endpoint."""
     processor = get_video_processor()
+    processor.start()
     
     def generate():
         while True:
@@ -31,11 +32,23 @@ async def video_feed():
     return StreamingResponse(generate(), media_type="multipart/x-mixed-replace; boundary=frame")
 
 
+@router.get("/snapshot")
+async def get_snapshot():
+    """Returns the current frame as a static JPEG image."""
+    processor = get_video_processor()
+    processor.start()
+    frame = processor.get_frame()
+    if frame:
+        return Response(content=frame, media_type="image/jpeg")
+    return Response(status_code=404, content="No frame available")
+
+
 @router.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     """WebSocket for real-time metadata and stats."""
     await websocket.accept()
     processor = get_video_processor()
+    processor.start()
     
     try:
         while True:

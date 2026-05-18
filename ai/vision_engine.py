@@ -36,6 +36,7 @@ class VisionEngine:
         """
         # In a real app, this would be a custom model like 'weights/best.pt'
         # If 'yolov8n.pt' doesn't exist, ultralytics will download it automatically.
+        self.model_path = model_path
         self.model = YOLO(model_path)
         self.conf_threshold = conf_threshold
         
@@ -50,6 +51,13 @@ class VisionEngine:
         # Detection zone (optional - can be full frame or specific ROI)
         # For now, we'll use a simple "line crossing" logic or just "in-frame" logic.
         print(f"[VisionEngine] Initialized with {model_path}")
+
+    def reload_model(self, model_path: str | None = None) -> None:
+        """Reload the YOLO model without restarting the process."""
+        if model_path:
+            self.model_path = model_path
+        self.model = YOLO(self.model_path)
+        print(f"[VisionEngine] Reloaded model from {self.model_path}")
 
     def process_frame(self, frame: np.ndarray) -> Tuple[np.ndarray, List[TrackedObject], Dict[str, Any]]:
         """

@@ -83,6 +83,20 @@ const translations = {
     history: 'History',
     usagePlan: 'Usage & Plan',
     upgradeToPro: 'Upgrade to Pro',
+    adminPanel: 'Admin Panel',
+    loadingWorkspace: 'Preparing your workspace...',
+    billingUsage: 'Usage & Billing',
+    billingSubtitle: 'Choose the right plan for your production needs.',
+    usageProgress: 'Usage Progress',
+    predictionsUsed: 'Predictions Used',
+    resetNotice: 'Limit will automatically reset at the beginning of next month.',
+    paymentMethods: 'Payment Methods',
+    noPaymentMethod: 'No payment methods connected.',
+    addPayment: 'Add new method +',
+    billingHistory: 'Billing History',
+    noBillingHistory: 'No transactions found.',
+    viewAll: 'View All',
+    using: 'In Use',
     upgradeDesc: 'Unlimited inspections + API access',
     upgradeNow: 'Upgrade Now',
     signOut: 'Sign Out',
@@ -111,6 +125,17 @@ const translations = {
     startFirstInspection: 'Start First Inspection',
     resets: 'Resets',
 
+    analysisResult: 'Analysis Result',
+    confidence: 'Confidence',
+    processingTime: 'Processing Time',
+    detailScores: 'Detailed Scores',
+    visualInspection: 'Visual Inspection',
+    aiSurfaceDetection: 'Use AI to detect surface defects in seconds.',
+    perfectSurface: 'Perfect Surface',
+    anomalyDetected: 'Anomaly Detected',
+    perfectDesc: 'No signs of damage or surface defects detected on this object.',
+    anomalyDesc: 'The system has detected inconsistencies. Please check manually.',
+
     // Inspect page
     inspectTitle: 'Inspect Image',
     inspectSubtitle: 'Upload a product image to detect defects using AI',
@@ -125,7 +150,6 @@ const translations = {
     typicallyUnder: 'Typically takes under 200ms',
     noDefectsDetected: 'No defects detected',
     defectDetected: 'Defect detected',
-    confidence: 'confidence',
     scoreBreakdown: 'SCORE BREAKDOWN',
 
     // Webcam
@@ -258,6 +282,20 @@ const translations = {
     history: 'Lịch Sử',
     usagePlan: 'Sử Dụng & Gói',
     upgradeToPro: 'Nâng Cấp Pro',
+    adminPanel: 'Quản trị hệ thống',
+    loadingWorkspace: 'Đang chuẩn bị không gian làm việc...',
+    billingUsage: 'Gói dịch vụ & Hạn mức',
+    billingSubtitle: 'Chọn gói dịch vụ phù hợp với nhu cầu sản xuất của bạn.',
+    usageProgress: 'Tiến độ sử dụng',
+    predictionsUsed: 'Dự đoán đã dùng',
+    resetNotice: 'Hạn mức sẽ tự động reset vào đầu tháng tới.',
+    paymentMethods: 'Phương thức thanh toán',
+    noPaymentMethod: 'Chưa có phương thức thanh toán nào được kết nối.',
+    addPayment: 'Thêm phương thức mới +',
+    billingHistory: 'Lịch sử hóa đơn',
+    noBillingHistory: 'Chưa có giao dịch nào phát sinh.',
+    viewAll: 'Xem tất cả',
+    using: 'Đang sử dụng',
     upgradeDesc: 'Không giới hạn kiểm tra + API',
     upgradeNow: 'Nâng Cấp Ngay',
     signOut: 'Đăng Xuất',
@@ -286,6 +324,17 @@ const translations = {
     startFirstInspection: 'Bắt Đầu Kiểm Tra',
     resets: 'Làm mới',
 
+    analysisResult: 'Kết Quả Phân Tích',
+    confidence: 'Độ tin cậy',
+    processingTime: 'Thời gian xử lý',
+    detailScores: 'Tỉ lệ lỗi chi tiết',
+    visualInspection: 'Kiểm tra Trực quan',
+    aiSurfaceDetection: 'Sử dụng AI để phát hiện lỗi bề mặt trong tích tắc.',
+    perfectSurface: 'Bề mặt Hoàn hảo',
+    anomalyDetected: 'Phát hiện Bất thường',
+    perfectDesc: 'Không phát hiện thấy dấu hiệu hư hỏng hoặc lỗi bề mặt nào.',
+    anomalyDesc: 'Hệ thống đã phát hiện các dấu hiệu không đồng nhất. Vui lòng kiểm tra lại.',
+
     // Inspect page
     inspectTitle: 'Kiểm Tra Ảnh',
     inspectSubtitle: 'Tải ảnh sản phẩm để phát hiện lỗi bằng AI',
@@ -300,7 +349,6 @@ const translations = {
     typicallyUnder: 'Thường mất dưới 200ms',
     noDefectsDetected: 'Không phát hiện lỗi',
     defectDetected: 'Phát hiện lỗi',
-    confidence: 'độ tin cậy',
     scoreBreakdown: 'CHI TIẾT ĐIỂM SỐ',
 
     // Webcam
@@ -357,7 +405,7 @@ const translations = {
   },
 } as const;
 
-export type Translations = typeof translations.en;
+export type Translations = typeof translations.en | typeof translations.vi;
 
 // ── Context ───────────────────────────────────────────────────────────────────
 interface LanguageContextType {

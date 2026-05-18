@@ -49,19 +49,127 @@ CREATE TABLE IF NOT EXISTS public.usage_logs (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 2. Bật Row Level Security (RLS)
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.predictions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.subscriptions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.usage_logs ENABLE ROW LEVEL SECURITY;
 
--- 3. Tạo Policies (Xóa cái cũ nếu có để tránh lỗi "already exists")
 
--- Policy cho bảng users
 DROP POLICY IF EXISTS "Users can view their own profile" ON public.users;
 CREATE POLICY "Users can view their own profile" ON public.users
     FOR SELECT USING (auth.uid() = id);
 
+-- ─────────────────────────────────────────────────────────────────────────────
+-- AI Training Platform Tables
+-- ─────────────────────────────────────────────────────────────────────────────
+
+create extension if not exists "pgcrypto";
+
+create table if not exists datasets (
+    id uuid primary key default gen_random_uuid(),
+    slug text unique not null,
+    name text not null,
+    description text,
+    storage_backend text not null default 'local',
+    storage_path text not null,
+    classes jsonb not null default '[]'::jsonb,
+    image_count integer not null default 0,
+    label_count integer not null default 0,
+    train_count integer not null default 0,
+    val_count integer not null default 0,
+    test_count integer not null default 0,
+    created_by uuid,
+    created_at timestamptz not null default now(),
+    updated_at timestamptz
+);
+
+create table if not exists dataset_assets (
+    id uuid primary key default gen_random_uuid(),
+    dataset_id uuid not null references datasets(id) on delete cascade,
+    file_name text not null,
+    split text not null default 'train',
+    asset_type text not null default 'image',
+    file_path text not null,
+    label_path text,
+    preview_url text,
+    size_bytes bigint,
+    created_at timestamptz not null default now()
+);
+
+create table if not exists training_jobs (
+    id uuid primary key default gen_random_uuid(),
+    dataset_id uuid not null references datasets(id) on delete cascade,
+    model_type text not null default 'yolov8n',
+    epochs integer not null default 100,
+    batch_size integer not null default 16,
+    image_size integer not null default 640,
+    learning_rate numeric not null default 0.001,
+    optimizer text not null default 'AdamW',
+    status text not null default 'queued',
+    progress numeric not null default 0,
+    current_epoch integer not null default 0,
+    total_epochs integer not null default 0,
+    train_loss numeric,
+    val_loss numeric,
+    map50 numeric,
+    precision numeric,
+    recall numeric,
+    eta_seconds integer,
+    gpu_usage numeric,
+    ram_usage numeric,
+    config jsonb not null default '{}'::jsonb,
+    logs_path text,
+    error_message text,
+    created_by uuid,
+    created_at timestamptz not null default now(),
+    started_at timestamptz,
+    finished_at timestamptz,
+    model_version_id uuid,
+    updated_at timestamptz
+);
+
+create table if not exists training_logs (
+    id uuid primary key default gen_random_uuid(),
+    training_job_id uuid not null references training_jobs(id) on delete cascade,
+    level text not null default 'info',
+    message text not null,
+    epoch integer,
+    step integer,
+    metadata jsonb not null default '{}'::jsonb,
+    created_at timestamptz not null default now()
+);
+
+create table if not exists model_versions (
+    id uuid primary key default gen_random_uuid(),
+    dataset_id uuid not null references datasets(id) on delete cascade,
+    training_job_id uuid not null references training_jobs(id) on delete cascade,
+    name text not null,
+    version text not null,
+    model_type text not null,
+    weights_path text not null,
+    config jsonb not null default '{}'::jsonb,
+    metrics jsonb not null default '{}'::jsonb,
+    is_active boolean not null default false,
+    created_at timestamptz not null default now(),
+    updated_at timestamptz,
+    deployed_at timestamptz
+);
+
+create table if not exists deployed_models (
+    id uuid primary key default gen_random_uuid(),
+    model_version_id uuid not null references model_versions(id) on delete cascade,
+    status text not null default 'active',
+    deployed_by uuid,
+    deployed_at timestamptz not null default now(),
+    previous_model_version_id uuid,
+    metadata jsonb not null default '{}'::jsonb
+);
+
+create index if not exists idx_dataset_assets_dataset_id on dataset_assets(dataset_id);
+create index if not exists idx_training_jobs_dataset_id on training_jobs(dataset_id);
+create index if not exists idx_training_logs_job_id on training_logs(training_job_id);
+create index if not exists idx_model_versions_dataset_id on model_versions(dataset_id);
+create index if not exists idx_model_versions_active on model_versions(is_active);
 DROP POLICY IF EXISTS "Users can update their own profile" ON public.users;
 CREATE POLICY "Users can update their own profile" ON public.users
     FOR UPDATE USING (auth.uid() = id);

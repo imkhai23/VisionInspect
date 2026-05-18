@@ -5,14 +5,18 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { User } from '@/types';
-import Cookies from 'js-cookie';
 import { authApi } from '@/lib/api';
+import { tokenStorage } from '@/lib/auth';
 import { 
   LayoutDashboard, 
   Search, 
   History, 
   CreditCard, 
   ShieldCheck, 
+  FolderKanban,
+  Layers3,
+  Database,
+  Activity,
   LogOut, 
   Menu,
   X,
@@ -31,7 +35,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   useEffect(() => {
     const fetchUser = async () => {
-      const token = Cookies.get('access_token');
+      const token = tokenStorage.get();
       if (!token) {
         router.push('/login');
         return;
@@ -40,7 +44,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         const res = await authApi.me();
         setUser(res.data);
       } catch (err) {
-        Cookies.remove('access_token');
+        tokenStorage.remove();
         router.push('/login');
       } finally {
         setLoading(false);
@@ -57,7 +61,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   ];
 
   if (user?.is_admin) {
-    NAV_ITEMS.push({ href: '/dashboard/admin', icon: ShieldCheck, label: lang === 'vi' ? 'Quản trị hệ thống' : 'Admin Panel' });
+    NAV_ITEMS.push(
+      { href: '/dashboard/admin', icon: ShieldCheck, label: lang === 'vi' ? 'Quản trị hệ thống' : 'Admin Panel' },
+      { href: '/dashboard/admin/datasets', icon: FolderKanban, label: lang === 'vi' ? 'Dataset Manager' : 'Dataset Manager' },
+      { href: '/dashboard/admin/training', icon: Activity, label: lang === 'vi' ? 'AI Training' : 'AI Training' },
+      { href: '/dashboard/admin/models', icon: Layers3, label: lang === 'vi' ? 'Model Registry' : 'Model Registry' },
+      { href: '/dashboard/admin/history', icon: Database, label: lang === 'vi' ? 'Training History' : 'Training History' },
+    );
   }
 
   if (loading) {
@@ -149,7 +159,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </button>
 
           <button
-            onClick={() => { Cookies.remove('access_token'); router.push('/login'); }}
+            onClick={() => { tokenStorage.remove(); router.push('/login'); }}
             className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-sm font-bold text-red-400 hover:bg-red-400/10 transition-all group"
           >
             <LogOut size={18} className="group-hover:-translate-x-1 transition-transform" />

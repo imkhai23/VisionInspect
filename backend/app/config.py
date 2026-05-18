@@ -41,6 +41,18 @@ class Settings(BaseSettings):
     max_upload_size_mb: int = 10
     allowed_image_types: list[str] = ["image/jpeg", "image/png", "image/webp"]
 
+    # ── AI Training Platform ────────────────────────────────────────────────
+    redis_url: str = "redis://localhost:6379/0"
+    training_queue_name: str = "visioninspect:training"
+    dataset_storage_backend: str = "local"
+    dataset_storage_bucket: str = "datasets"
+    s3_endpoint_url: str = ""
+    s3_access_key_id: str = ""
+    s3_secret_access_key: str = ""
+    s3_bucket_name: str = "visioninspect-datasets"
+    enable_video_processor: bool = False
+    active_model_manifest_path: str = "storage/models/active_model.json"
+
 
 @lru_cache
 def get_settings() -> Settings:

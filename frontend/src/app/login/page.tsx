@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { authApi } from '@/lib/api';
-import Cookies from 'js-cookie';
+import { tokenStorage } from '@/lib/auth';
 import toast from 'react-hot-toast';
 import { LogIn, Mail, Lock, Loader2, ArrowLeft, Search, Globe } from 'lucide-react';
 
@@ -36,7 +36,7 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
       const response = await authApi.login(data);
-      Cookies.set('access_token', response.data.access_token);
+      tokenStorage.set(response.data.access_token);
       toast.success(t.welcomeBack + '!');
       router.push('/dashboard');
     } catch (error: any) {

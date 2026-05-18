@@ -70,7 +70,7 @@ export default function UsagePage() {
         <h1 className="text-4xl font-black text-white tracking-tight leading-tight">
           {t.billingUsage}
         </h1>
-        <p className="text-slate-500 max-w-xl mx-auto">{t.pricingSubtitle}</p>
+        <p className="text-slate-500 max-w-xl mx-auto">{t.billingSubtitle}</p>
       </div>
 
       {/* Usage Stats */}

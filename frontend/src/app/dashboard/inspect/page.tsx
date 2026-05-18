@@ -7,10 +7,10 @@ import toast from 'react-hot-toast';
 import {
   Upload, Search, CheckCircle2, AlertTriangle,
   Loader2, X, Shield, Clock, BarChart3,
-  ImagePlus, Sparkles, Camera, RefreshCw, ZoomIn
+  ImagePlus, Sparkles, Camera, RefreshCw, ZoomIn, Activity
 } from 'lucide-react';
 
-type Mode = 'upload' | 'camera';
+type Mode = 'upload' | 'camera' | 'stream';
 
 export default function InspectPage() {
   const { t, lang } = useLanguage();
@@ -30,6 +30,9 @@ export default function InspectPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const streamImgRef = useRef<HTMLImageElement>(null);
+
+  const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
   const translateLabel = (label: string) => {
     if (!label) return '';
@@ -47,8 +50,33 @@ export default function InspectPage() {
   // ── Camera helpers ────────────────────────────────────────────────────────
   const startCamera = useCallback(async () => {
     setCameraError(null);
+
+    // Check for Secure Context
+    if (!window.isSecureContext) {
+      setCameraError(lang === 'vi' 
+        ? 'Lỗi: Camera chỉ hoạt động trên kết nối bảo mật (HTTPS hoặc localhost).' 
+        : 'Error: Camera only works on secure connections (HTTPS or localhost).');
+      return;
+    }
+
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
+      let stream;
+      try {
+        // Try with ideal constraints first
+        stream = await navigator.mediaDevices.getUserMedia({ 
+          video: { 
+            facingMode: 'environment', 
+            width: { ideal: 1280 }, 
+            height: { ideal: 720 } 
+          }, 
+          audio: false 
+        });
+      } catch (e) {
+        // Fallback to basic video
+        console.warn("Camera ideal constraints failed, falling back to basic", e);
+        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      }
+
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
@@ -57,7 +85,23 @@ export default function InspectPage() {
       setCameraActive(true);
       setCaptured(null);
     } catch (err: any) {
-      setCameraError(lang === 'vi' ? 'Không thể truy cập camera. Vui lòng cấp quyền trong trình duyệt.' : 'Cannot access camera. Please allow camera permission in browser.');
+      console.error("Camera access error details:", err);
+      
+      let msg = lang === 'vi' 
+        ? 'Không thể truy cập camera. Vui lòng cấp quyền trong trình duyệt.' 
+        : 'Cannot access camera. Please allow permission.';
+
+      if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+        msg = lang === 'vi'
+          ? 'Camera đang bị ứng dụng khác sử dụng (có thể là Backend Server). Vui lòng tắt ứng dụng đang dùng camera và thử lại.'
+          : 'Camera is already in use by another app (likely the Backend Server). Please close it and try again.';
+      } else if (err.name === 'NotAllowedError') {
+        msg = lang === 'vi'
+          ? 'Bạn đã chặn quyền truy cập camera. Vui lòng mở cài đặt trình duyệt để cho phép.'
+          : 'Camera access denied. Please enable it in browser settings.';
+      }
+
+      setCameraError(msg);
     }
   }, [lang]);
 
@@ -89,10 +133,36 @@ export default function InspectPage() {
     }, 'image/jpeg', 0.92);
   };
 
+  const captureFromStream = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`${backendUrl}/api/v1/stream/snapshot`);
+      if (!response.ok) throw new Error('Failed to capture snapshot');
+      
+      const blob = await response.blob();
+      const dataUrl = URL.createObjectURL(blob);
+      
+      setCaptured(dataUrl);
+      setPreview(dataUrl);
+      
+      const f = new File([blob], `stream_${Date.now()}.jpg`, { type: 'image/jpeg' });
+      setFile(f);
+      setResult(null);
+      
+      toast.success(lang === 'vi' ? '📸 Đã chụp ảnh từ luồng live!' : '📸 Captured from live stream!');
+    } catch (err) {
+      console.error("Stream capture error:", err);
+      toast.error(lang === 'vi' ? 'Không thể chụp ảnh từ luồng live.' : 'Failed to capture from live stream.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Stop camera when switching mode
   useEffect(() => {
     if (mode !== 'camera') stopCamera();
     else { setCaptured(null); setFile(null); setPreview(null); setResult(null); }
+    if (mode === 'stream') { setCaptured(null); setFile(null); setPreview(null); setResult(null); }
   }, [mode, stopCamera]);
 
   // Cleanup on unmount
@@ -145,19 +215,20 @@ export default function InspectPage() {
         {/* Mode tabs */}
         <div className="flex items-center gap-1 p-1 bg-white/5 border border-white/10 rounded-2xl">
           {([
-            { key: 'upload', icon: <Upload size={16} />, label: lang === 'vi' ? 'Tải ảnh lên' : 'Upload' },
-            { key: 'camera', icon: <Camera size={16} />, label: lang === 'vi' ? 'Dùng Camera' : 'Camera' },
+            { key: 'upload', icon: <Upload size={16} />, label: lang === 'vi' ? 'Tải ảnh' : 'Upload' },
+            { key: 'camera', icon: <Camera size={16} />, label: lang === 'vi' ? 'Camera' : 'Camera' },
+            { key: 'stream', icon: <Activity size={16} />, label: lang === 'vi' ? 'Luồng Live' : 'Live Stream' },
           ] as const).map(tab => (
             <button
               key={tab.key}
               onClick={() => setMode(tab.key)}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 ${
                 mode === tab.key
                   ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
                   : 'text-slate-400 hover:text-white'
               }`}
             >
-              {tab.icon} {tab.label}
+              {(tab as any).icon} {tab.label}
             </button>
           ))}
         </div>
@@ -302,7 +373,55 @@ export default function InspectPage() {
             </div>
           )}
 
+          {/* ── STREAM MODE ── */}
+          {mode === 'stream' && (
+            <div className="space-y-4">
+              <div className="relative rounded-3xl overflow-hidden border-2 border-white/10 bg-black aspect-video flex items-center justify-center">
+                {!captured ? (
+                  <>
+                    <img 
+                      ref={streamImgRef}
+                      src={`${backendUrl}/api/v1/stream/video_feed`} 
+                      className="w-full h-full object-cover" 
+                      alt="Live Stream"
+                      crossOrigin="anonymous"
+                    />
+                    <div className="absolute top-3 left-3 flex items-center gap-1.5 px-2 py-1 bg-indigo-500/80 rounded-full">
+                      <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+                      <span className="text-[10px] font-bold text-white uppercase">{lang === 'vi' ? 'Luồng từ AI' : 'AI Stream'}</span>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <img src={captured} className="w-full h-full object-cover" alt="Captured" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                    <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between">
+                      <span className="px-3 py-1 bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-xs font-bold rounded-full">
+                        ✅ {lang === 'vi' ? 'Đã lấy khung hình' : 'Frame Captured'}
+                      </span>
+                      <button onClick={handleReset} className="flex items-center gap-1.5 px-3 py-1.5 bg-black/60 backdrop-blur-md rounded-full text-white text-xs font-bold hover:bg-indigo-500 transition-all">
+                        <RefreshCw size={12} /> {lang === 'vi' ? 'Lấy lại' : 'Retake'}
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {!captured && (
+                <button
+                  onClick={captureFromStream}
+                  className="w-full py-4 rounded-2xl font-bold text-white text-lg transition-all flex items-center justify-center gap-3"
+                  style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}
+                >
+                  <Camera size={22} />
+                  📸 {lang === 'vi' ? 'CHỤP TỪ LUỒNG LIVE' : 'CAPTURE FROM STREAM'}
+                </button>
+              )}
+            </div>
+          )}
+
           {/* ── Analyze button (shared) ── */}
+
           {(preview || captured) && (
             <button
               onClick={handleUpload}
