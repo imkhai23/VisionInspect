@@ -49,7 +49,8 @@ graph TD
     Worker -- "Realtime Log" --> Supabase_Realtime
 
 ```
-*Ghi chú: Em hãy dùng Mermaid.live hoặc các công cụ khác để vẽ sơ đồ này thành hình ảnh và chèn vào báo cáo tại file `hinh_anh/kien_truc_tong_the.png`.*
+
+![Sơ đồ kiến trúc tổng thể hệ thống VisionInspect](../hinh_anh/kien_truc_tong_the.png)
 
 **Mô tả các thành phần:**
 - **Client Browser:** Giao diện người dùng được chạy trên trình duyệt, tương tác với hệ thống.
@@ -151,9 +152,9 @@ Cơ sở dữ liệu của hệ thống được quản lý bởi Supabase, sử
 
 Sơ đồ ERD mô tả các thực thể chính và mối quan hệ giữa chúng.
 
-*(Ghi chú: Em cần sử dụng một công cụ như dbdiagram.io, Lucidchart, hoặc Mermaid để vẽ sơ đồ ERD dựa trên các bảng trong file `supabase_setup.sql` và lưu ảnh tại `hinh_anh/erd.png`. Sơ đồ cần thể hiện các bảng và các mối quan hệ khóa ngoại (foreign key) như: `users.id` -> `predictions.user_id`, `users.id` -> `datasets.created_by`, `datasets.id` -> `training_jobs.dataset_id`, etc.)*
+![Sơ đồ thực thể liên kết (ERD) hệ thống VisionInspect](../hinh_anh/erd.png)
 
-**Ví dụ mã Mermaid cho một phần ERD:**
+**Mã Mermaid mô tả cấu trúc ERD:**
 ```mermaid
 erDiagram
     users {

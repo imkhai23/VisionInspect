@@ -52,8 +52,6 @@ services:
       NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:-}
     ports:
       - "3000:3000"
-    depends_on:
-      - backend
 
   training-worker:
     build:
